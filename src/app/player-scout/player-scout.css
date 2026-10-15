@@ -412,14 +412,82 @@ select:focus-visible,
   margin-top: 0.2rem;
 }
 
-/* A full roster: the player whose going costs the lineup least, the figure an upgrade has to clear. */
+/* A full roster: which player goes, asked once for the whole list. The lead runs into the chips,
+   which wrap under it on a phone. */
 .floor app-icon {
   color: var(--color-text-subtle);
 }
 
-.floor-score {
-  font-variant-numeric: tabular-nums;
+.floor-body {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+
+.floor-lead {
+  white-space: nowrap;
+}
+
+/* The drops to choose from, drawn as the position pills are: one of them pressed. The name, his
+   positions and what his going costs, the cost quiet beside the name and the chosen chip's in the
+   pill's own contrast rather than a grey. */
+.drop-chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pill--drop {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: 3px var(--space-3);
+}
+
+.pill--drop .pill-name {
+  color: var(--color-text);
   font-weight: var(--weight-semibold);
+}
+
+.pill--drop .pill-cost {
+  font-variant-numeric: tabular-nums;
+}
+
+.pill--drop.pill--active .pill-name,
+.pill--drop.pill--active .pill-cost {
+  color: var(--color-primary-contrast);
+}
+
+/* A position chip on the navy pill keeps its letters and loses its wash, which read as a patch. */
+.pill--drop.pill--active app-position-chips {
+  --pos: var(--color-primary-contrast);
+  --pos-bg: rgba(255, 255, 255, 0.16);
+}
+
+.pill--drop.pill--active .drop-tag--out {
+  border-color: var(--color-primary-contrast);
+  color: var(--color-primary-contrast);
+}
+
+.pill--other {
+  padding: 3px var(--space-3);
+}
+
+/* Under the line: why the chosen drop is cheap when it is his seat, then what the figures are. */
+.room-caption {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  margin: var(--space-1) 0 0;
+  padding-left: calc(14px + var(--space-2));
+}
+
+.drop-why {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+  margin-right: var(--space-1);
 }
 
 .roster-toggle {
@@ -470,8 +538,9 @@ select:focus-visible,
 }
 
 /* The roster as a small table: who, where he sits, what he projects to, and what the lineup
-   would lose without him. */
+   would lose without him. A container, so the phone's cut of columns follows its own width. */
 .roster .table-scroll {
+  container-type: inline-size;
   overflow-x: auto;
 }
 
@@ -510,9 +579,83 @@ select:focus-visible,
   font-size: var(--text-xs);
 }
 
-/* The one the line above names: the row the eye should land on first. */
-.roster-row--cheapest td {
+/* The drop chosen: the row the eye should land on first. */
+.roster-row--drop td {
   background: var(--color-surface);
+}
+
+/* The pick is the whole of the player cell, radio first, as the draft sources are picked. */
+.drop-pick {
+  cursor: pointer;
+}
+
+.drop-pick input {
+  accent-color: var(--color-accent);
+  flex: none;
+  height: 1rem;
+  margin: 2px 0 0;
+  width: 1rem;
+}
+
+.drop-pick:has(input:disabled) {
+  cursor: default;
+}
+
+.drop-pick input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* The players on injured reserve under a line of their own: no spot of theirs can be freed. */
+.roster-divider td {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  padding-top: var(--space-2);
+}
+
+/* The rest of the roster, folded under the few a drop would be. */
+.roster-more {
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  margin-top: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.roster-more:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* On a phone the roster keeps the player, his starts and his cost, with the player pinned while
+   the figures scroll, so a cost never loses its name. */
+@container (max-width: 38rem) {
+  .roster-col--wide {
+    display: none;
+  }
+
+  .roster-table th:first-child,
+  .roster-table td:first-child {
+    background: var(--color-surface-alt);
+    left: 0;
+    max-width: 11rem;
+    position: sticky;
+    z-index: 1;
+  }
+
+  .roster-row--drop td:first-child {
+    background: var(--color-surface);
+  }
+
+  .drop-name {
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
 }
 
 /* The crest, then the name with his positions beside it. The crest never wraps: on a phone

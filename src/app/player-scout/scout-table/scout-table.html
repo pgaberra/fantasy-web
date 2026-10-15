@@ -10,7 +10,7 @@
             <span class="group-name">Projection</span>
             <span class="group-since">{{ sinceLabel() }}</span>
           </th>
-          @if (swaps()) {
+          @if (gaining()) {
             <th scope="colgroup" class="group-col group-col--start"></th>
           }
         </tr>
@@ -108,13 +108,18 @@
               </button>
             </th>
           }
-          @if (swaps()) {
+          @if (gaining()) {
             <th
               scope="col"
-              class="swap-col stat-col--start"
-              appTooltip="Best drop for him, and what your lineup gains"
+              class="num gain-col stat-col--start"
+              [attr.aria-sort]="ariaSort('gain')"
             >
-              Swap
+              <button type="button" class="sort" (click)="sortBy.emit('gain')">
+                @if (sort().key === 'gain') {
+                  <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+                }
+                Gain if you drop {{ dropName() }}
+              </button>
             </th>
           }
         } @else {
@@ -205,6 +210,14 @@
                     <span class="scout-tag" appTooltip="No projection on the chosen day">New</span>
                   }
                 </span>
+                <!-- On a phone the gain column is off the screen, so the gain rides in the
+                     frozen player cell instead; the stylesheet shows one or the other. -->
+                @if (gaining() && pickable(entry.row)) {
+                  <span class="player-gain" [class.player-gain--top]="isTopGain(entry.row)">
+                    <span class="player-gain-label">Gain</span>
+                    {{ gain(entry.row) ?? '?' }}
+                  </span>
+                }
               </span>
             </span>
           </th>
@@ -237,16 +250,13 @@
                 }
               </td>
             }
-            @if (swaps()) {
-              <td class="swap-col stat-col--start" tabindex="0" [appTooltip]="swapTip(entry.row)">
+            @if (gaining()) {
+              <td class="num gain-col stat-col--start" [class.gain-col--top]="isTopGain(entry.row)">
                 @if (pickable(entry.row)) {
-                  @if (swap(entry.row); as swap) {
-                    <span class="swap-gain" [class.swap-gain--up]="swap.gain > 0">{{
-                      gain(swap)
-                    }}</span>
-                    <span class="swap-drop">{{ making(swap) }}</span>
+                  @if (gain(entry.row); as gain) {
+                    <span class="gain">{{ gain }}</span>
                   } @else {
-                    <span class="swap-none">No one to drop</span>
+                    <span class="gain-unknown">?</span>
                   }
                 }
               </td>

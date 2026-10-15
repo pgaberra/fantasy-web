@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { Observable, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,7 +20,12 @@ import { YahooConnectReturnService } from '../services/yahoo-connect-return.serv
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
-import { DEFAULT_RECENT_GAMES, PlayerScoutComponent, SCOUT_PAGE_SIZE } from './player-scout';
+import {
+  DEFAULT_RECENT_GAMES,
+  PlayerScoutComponent,
+  SCOUT_PAGE_SIZE,
+  surname,
+} from './player-scout';
 import { ScoutTableComponent } from './scout-table/scout-table';
 import { SincePickerComponent } from './since-picker/since-picker';
 
@@ -188,6 +194,7 @@ describe('PlayerScoutComponent', () => {
     return MockBuilder(PlayerScoutComponent)
       .mock(PlayerScoutService, { players, myTeam })
       .keep(YahooLeaguePicker)
+      .keep(NgTemplateOutlet)
       .mock(YahooConnectReturnService)
       .mock(LeagueChoiceService, {
         get league() {
@@ -400,7 +407,7 @@ describe('PlayerScoutComponent', () => {
 
     expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'view')).toBe('ice');
     expect(page.iceLabel()).toBe("each club's last 5 games");
-    expect(page.swaps()).toBeNull();
+    expect(page.gains()).toBeNull();
 
     page.recentGames.set(10);
     await fixture.whenStable();
@@ -484,7 +491,7 @@ describe('PlayerScoutComponent', () => {
     expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('opens on the list, with the roster folded under a line naming the cheapest drop', async () => {
+  it('opens on the list, with the roster folded under a line offering the cheapest drops, the cheapest chosen', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
@@ -492,17 +499,33 @@ describe('PlayerScoutComponent', () => {
     // Everyone with a seat starts every night, so the cheapest is the lowest scorer who holds a
     // spot: the C on injured reserve scores lowest but holds none.
     expect(page.cheapest()?.player.playerId).toBe('203');
+    expect(page.drop()).toBe(page.cheapest());
     expect(page.valuation()?.byPlayer.get('203')?.starts).toBe(10);
     const floor = ngMocks.find(fixture, '.floor');
-    expect(ngMocks.formatText(floor)).toContain('Full roster.');
-    expect(ngMocks.formatText(ngMocks.find(floor, 'strong'))).toBe('Mine 203');
-    expect(ngMocks.formatText(ngMocks.find(floor, '.floor-score'))).toBe('costs 5.0');
+    expect(ngMocks.formatText(floor)).toContain('Full roster. If you drop');
+    const chips = ngMocks.findAll(fixture, '.pill--drop');
+    const chipText = (selector: string) =>
+      chips.map((chip) => ngMocks.formatText(ngMocks.find(chip, selector)));
+    expect(chipText('.pill-name')).toEqual(['Mine 203', 'Mine 202', 'Mine 210', 'Mine 207']);
+    expect(chipText('.pill-cost')).toEqual(['5.0', '7.0', '11.0', '70.0']);
+    expect(chips.map((chip) => chip.attributes['aria-checked'])).toEqual([
+      'true',
+      'false',
+      'false',
+      'false',
+    ]);
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.pill--other'))).toBe('Someone else');
+    // He starts every night, so his cost is his line: nothing to explain.
+    expect(page.dropWhy()).toBeNull();
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.room-caption'))).toContain(
+      'Cost and gain are what your lineup loses or gains',
+    );
     const toggle = ngMocks.find(fixture, '.roster-toggle');
     expect(ngMocks.formatText(toggle)).toBe('Your players (12)');
     expect(toggle.attributes['aria-expanded']).toBe('false');
   });
 
-  it('unfolds the roster, the cheapest to drop first, with his starts and what the lineup loses', async () => {
+  it('unfolds the roster to the few a drop would be, the chosen one marked, and the rest on request', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
@@ -513,18 +536,63 @@ describe('PlayerScoutComponent', () => {
     const order = page.roster().map((entry) => entry.player.playerId);
     expect(order[0]).toBe('203');
     expect(order.at(-1)).toBe('211');
-    const rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
-    expect(rows).toHaveLength(12);
+    let rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
+    expect(rows).toHaveLength(4);
     expect(ngMocks.formatText(rows[0])).toContain('10 / 10');
-    expect(rows[0].nativeElement.classList).toContain('roster-row--cheapest');
+    expect(rows[0].nativeElement.classList).toContain('roster-row--drop');
+    expect(ngMocks.find(rows[0], 'input[type=radio]').properties['checked']).toBe(true);
     // No comparison on: no Change column in the roster either.
     const headings = ngMocks
       .findAll(fixture, '.roster-table thead th')
       .map((th) => ngMocks.formatText(th));
     expect(headings).toEqual(['Player', 'Slot', 'Proj.', 'Starts', 'Lineup cost']);
+
+    const more = ngMocks.find(fixture, '.roster-more');
+    expect(ngMocks.formatText(more)).toBe('Show all 12');
+    ngMocks.click(more);
+    fixture.detectChanges();
+
+    rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
+    // Eleven who hold a spot, the line for injured reserve, and the one on it, with no radio.
+    expect(rows).toHaveLength(13);
+    expect(ngMocks.formatText(rows[11])).toBe('On IR, no spot to free');
+    expect(ngMocks.formatText(rows[12])).toContain('Mine 211');
+    expect(ngMocks.findAll(rows[12], 'input[type=radio]')).toHaveLength(0);
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-more'))).toBe('Show fewer');
   });
 
-  it('names the player whose going costs the lineup least, not the lowest scorer', async () => {
+  it('re-prices the list against the drop picked, from a chip or from the roster, and forgets him with the league', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    ngMocks.click(ngMocks.findAll(fixture, '.pill--drop')[1]);
+    fixture.detectChanges();
+
+    expect(page.drop()?.player.playerId).toBe('202');
+    expect(page.dropSurname()).toBe('202');
+    expect(ngMocks.findAll(fixture, '.pill--drop')[1].attributes['aria-checked']).toBe('true');
+    const table = ngMocks.find(fixture, ScoutTableComponent);
+    expect(ngMocks.input(table, 'dropName')).toBe('202');
+
+    // Someone else unfolds the whole roster, and any row of it can be the drop.
+    ngMocks.click(ngMocks.find(fixture, '.pill--other'));
+    fixture.detectChanges();
+    expect(page.rosterOpen()).toBe(true);
+    expect(page.rosterAll()).toBe(true);
+    const rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
+    const makar = rows.find((row) => ngMocks.formatText(row).includes('Mine 201'))!;
+    ngMocks.change(ngMocks.find(makar, 'input[type=radio]'), true);
+    fixture.detectChanges();
+    expect(page.drop()?.player.playerId).toBe('201');
+    // A fifth chip, since he is none of the four cheapest.
+    expect(ngMocks.findAll(fixture, '.pill--drop')).toHaveLength(5);
+
+    // A pick that is not on the roster, as after a league change, falls back to the cheapest.
+    page.pickDrop('nobody');
+    expect(page.drop()?.player.playerId).toBe('203');
+  });
+
+  it('names the player whose going costs the lineup least, not the lowest scorer, and prices every pickup against him', async () => {
     // Two centre seats and one defence seat: the third centre starts nowhere, so he costs
     // nothing to drop, though he outscores the lone defenceman, who starts every night.
     settings = {
@@ -566,17 +634,94 @@ describe('PlayerScoutComponent', () => {
     expect(page.cheapest()?.player.playerId).toBe('403');
     expect(page.valuation()?.byPlayer.get('403')?.marginal).toBe(0);
     expect(page.valuation()?.byPlayer.get('404')?.marginal).toBe(20);
-    // The available D replaces the lone D for a gain; the available C cannot start, so his best
-    // swap, the benched centre, gains nothing.
-    const swap = (id: string) => {
-      const found = page.swaps()?.get(id);
-      return found?.kind === 'drop' ? { drop: found.drop.playerId, gain: found.gain } : found;
-    };
-    expect(swap('99')).toEqual({ drop: '404', gain: 30 });
-    expect(swap('98')).toEqual({ drop: '403', gain: 0 });
+    expect(page.dropWhy()).toBe('Starts 0 of 10 nights behind 401 and 402.');
+    // The available D replaces the lone D for a gain; the available C cannot start, so dropping
+    // the benched centre for him gains nothing.
+    expect(page.gains()?.get('99')).toBeCloseTo(30);
+    expect(page.gains()?.get('98')).toBeCloseTo(0);
+
+    // Dropping the lone defenceman instead: the D pickup nets his 50 less the 20 lost; the C
+    // pickup still cannot start and the D seat stands empty.
+    page.pickDrop('404');
+    expect(page.dropWhy()).toBeNull();
+    expect(page.gains()?.get('99')).toBeCloseTo(30);
+    expect(page.gains()?.get('98')).toBeCloseTo(-20);
   });
 
-  it('weighs no swaps while the team is not his', async () => {
+  it('sorts the whole list by the gain, not the page, and offers the column only with a drop', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.pool.set('all');
+    // Two pages, every available player priced whether on screen or not.
+    expect(page.pageCount()).toBe(2);
+    expect(page.gains()?.size).toBe(23);
+    page.sortBy('gain');
+    expect(page.sort()).toEqual({ key: 'gain', descending: true });
+    const first = page.sorted()[0];
+    expect(first.scout.owner).toBeNull();
+    expect(page.gains()?.get(first.player.playerId)).toBe(
+      Math.max(...[...page.gains()!.values()].map((gain) => gain ?? -Infinity)),
+    );
+
+    // Without a gain column the sort falls back to the ranking.
+    page.view.set('ice');
+    expect(page.sort()).toEqual({ key: 'score', descending: true });
+  });
+
+  it('offers neither a drop nor a gain column while a pickup costs nobody', async () => {
+    settings = {
+      ...SETTINGS,
+      rosterSlots: { ...SETTINGS.rosterSlots, bn: 1 },
+    };
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    expect(page.room().openSpots).toBe(1);
+    expect(page.fullRoster()).toBe(false);
+    expect(page.gains()).toBeNull();
+    expect(ngMocks.findAll(fixture, '.pill--drop')).toHaveLength(0);
+    expect(ngMocks.findAll(fixture, '.room-caption')).toHaveLength(0);
+    expect(ngMocks.formatText(fixture)).toContain('1 open roster spot');
+  });
+
+  it('keeps a player who is out off the chips, and prices him at nothing while out once picked', async () => {
+    const answer = team();
+    myTeam.mockReturnValue(
+      of({
+        ...answer,
+        team: {
+          ...answer.team,
+          players: answer.team.players.map((player) =>
+            player.playerId === '203' ? { ...player, out: true, injuryStatus: 'O' } : player,
+          ),
+        },
+      }),
+    );
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    // His seat is empty already, so he would be cheapest by our reckoning; the chips skip him.
+    expect(page.cheapest()?.player.playerId).toBe('202');
+    expect(page.dropChips().map((chip) => chip.player.playerId)).toEqual([
+      '202',
+      '210',
+      '207',
+      '208',
+    ]);
+
+    page.pickDrop('203');
+    fixture.detectChanges();
+    expect(page.drop()?.player.playerId).toBe('203');
+    const chosen = ngMocks
+      .findAll(fixture, '.pill--drop')
+      .find((chip) => chip.attributes['aria-checked'] === 'true')!;
+    expect(ngMocks.formatText(ngMocks.find(chosen, '.pill-name'))).toBe('Mine 203');
+    expect(ngMocks.formatText(ngMocks.find(chosen, '.pill-cost'))).toBe('0.0 while out');
+    expect(ngMocks.formatText(ngMocks.find(chosen, '.drop-tag--out'))).toBe('O');
+  });
+
+  it('prices no pickup while the team is not his', async () => {
     myTeam.mockReturnValue(
       of({ team: { found: false, teamName: null, players: [] }, schedule: new Map() }),
     );
@@ -584,7 +729,7 @@ describe('PlayerScoutComponent', () => {
     const page = fixture.point.componentInstance;
 
     expect(page.teamStatus()).toBe('not-found');
-    expect(page.swaps()).toBeNull();
+    expect(page.gains()).toBeNull();
     expect(ngMocks.formatText(fixture)).toContain('You have no team in this league');
   });
 
@@ -651,5 +796,11 @@ describe('PlayerScoutComponent', () => {
     expect(page.listReady()).toBe(false);
     expect(ngMocks.findAll(fixture, '.viewbar')).toHaveLength(1);
     expect(ngMocks.findAll(fixture, '.room-box')).toHaveLength(0);
+  });
+
+  it('heads the gain column by the surname', () => {
+    expect(surname('T.J. Hughes')).toBe('Hughes');
+    expect(surname('Nathan MacKinnon')).toBe('MacKinnon');
+    expect(surname('Mine 203')).toBe('203');
   });
 });

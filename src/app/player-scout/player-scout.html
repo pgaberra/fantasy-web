@@ -113,7 +113,9 @@
     } @else {
       @if (listReady()) {
         <!-- What a pickup costs, in one line above the list; the roster itself is folded under it,
-           since the page is for the league and the roster is the follow-up question. -->
+             since the page is for the league and the roster is the follow-up question. A full roster
+             asks which player goes: the line offers the few a drop would usually be, and the list
+             prices every pickup against the one chosen. -->
         <section class="room-box" aria-label="Room for a pickup">
           <div class="room-line">
             <div class="room-text">
@@ -137,7 +139,7 @@
                   </p>
                 }
                 @case ('ready') {
-                  @if (room().openSpots > 0 || room().toReserve.length > 0) {
+                  @if (!fullRoster()) {
                     <ul class="room-list">
                       @if (room().openSpots > 0) {
                         <li class="room">
@@ -164,29 +166,56 @@
                       }
                     </ul>
                   } @else {
-                    <p class="room floor">
+                    <div class="room floor">
                       <app-icon name="user-minus" [size]="14" />
-                      <span>
-                        @if (slotsKnown()) {
-                          Full roster.
-                        }
-                        @if (cheapest(); as low) {
-                          Cheapest to drop: <strong>{{ low.player.name }}</strong>
-                          <app-position-chips [positions]="low.player.positions" />
-                          @if (low.value && slotsKnown()) {
-                            <span
-                              class="floor-score"
-                              appTooltip="What your lineup loses without him (rest of season)"
-                              >costs {{ formatScore(low.value.marginal) }}</span
-                            >
-                          } @else {
-                            <span class="floor-score">{{ formatScore(low.score) }}</span>
+                      <div class="floor-body">
+                        <span class="floor-lead">
+                          @if (slotsKnown()) {
+                            Full roster.
                           }
-                        } @else {
-                          None of your {{ shown() }} has a projection.
+                          @if (drop()) {
+                            If you drop
+                          } @else {
+                            None of your {{ shown() }} has a projection.
+                          }
+                        </span>
+                        @if (drop(); as drop) {
+                          <!-- The drop as a choice of a few: the cheapest first and chosen, the next
+                               cheapest beside him, and the whole roster behind Someone else. Pressing one
+                               re-prices the list in place. -->
+                          <div class="drop-chips" role="radiogroup" aria-label="The player to drop">
+                            @for (chip of dropChips(); track chip.player.playerId) {
+                              <button
+                                type="button"
+                                class="pill pill--drop"
+                                role="radio"
+                                [class.pill--active]="chip === drop"
+                                [attr.aria-checked]="chip === drop"
+                                (click)="pickDrop(chip.player.playerId)"
+                              >
+                                <span class="pill-name">{{ chip.player.name }}</span>
+                                <app-position-chips [positions]="chip.player.positions" />
+                                @if (chip.player.out) {
+                                  <span class="drop-tag drop-tag--out">{{
+                                    chip.player.injuryStatus ?? 'Out'
+                                  }}</span>
+                                }
+                                <span class="pill-cost">{{ dropCost(chip) }}</span>
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="pill pill--other"
+                              aria-controls="scout-roster"
+                              [attr.aria-expanded]="rosterOpen()"
+                              (click)="openRoster()"
+                            >
+                              Someone else
+                            </button>
+                          </div>
                         }
-                      </span>
-                    </p>
+                      </div>
+                    </div>
                   }
                 }
               }
@@ -205,6 +234,18 @@
             }
           </div>
 
+          @if (fullRoster() && drop()) {
+            <!-- Written out rather than left to a tooltip, since a phone shows none: why the chosen
+                 drop is cheap when it is his seat, and what the costs and gains are figures of. -->
+            <p class="room-caption">
+              @if (dropWhy(); as why) {
+                <span class="drop-why">{{ why }}</span>
+              }
+              Cost and gain are what your lineup loses or gains over the rest of the season, with
+              every night's starters set.
+            </p>
+          }
+
           @if (teamStatus() === 'ready' && rosterOpen()) {
             <div id="scout-roster" class="roster">
               <p class="roster-caption">
@@ -212,6 +253,9 @@
                   {{ name }},
                 }
                 the cheapest to drop first.
+                @if (rosterUnweighed()) {
+                  A ? is a club whose nights the schedule lacks.
+                }
               </p>
               @if (roster().length === 0) {
                 <p class="room-note">None of your {{ shown() }} is on the roster.</p>
@@ -221,12 +265,16 @@
                     <thead>
                       <tr>
                         <th scope="col">Player</th>
-                        <th scope="col" class="num">Slot</th>
-                        <th scope="col" class="num" appTooltip="Rest-of-season AI projection">
+                        <th scope="col" class="num roster-col--wide">Slot</th>
+                        <th
+                          scope="col"
+                          class="num roster-col--wide"
+                          appTooltip="Rest-of-season AI projection"
+                        >
                           Proj.
                         </th>
                         @if (compare()) {
-                          <th scope="col" class="num">Change</th>
+                          <th scope="col" class="num roster-col--wide">Change</th>
                         }
                         @if (slotsKnown()) {
                           <th
@@ -236,77 +284,109 @@
                           >
                             Starts
                           </th>
-                          <th
-                            scope="col"
-                            class="num"
-                            appTooltip="What your lineup loses without him"
-                          >
-                            Lineup cost
-                          </th>
+                          <th scope="col" class="num">Lineup cost</th>
                         }
                       </tr>
                     </thead>
                     <tbody>
-                      @for (entry of roster(); track entry.player.playerId) {
-                        <tr [class.roster-row--cheapest]="entry === cheapest()">
+                      @for (entry of rosterRows(); track entry.player.playerId) {
+                        <tr [class.roster-row--drop]="entry === drop()">
                           <td>
-                            <span class="drop-player">
-                              <app-team-logo
-                                class="drop-logo"
-                                [team]="entry.player.teamAbbrev"
-                                [alt]="entry.player.teamAbbrev ?? ''"
-                              />
-                              <span class="drop-identity">
-                                <span class="drop-name">{{ entry.player.name }}</span>
-                                <app-position-chips [positions]="entry.player.positions" />
-                                @if (entry.player.reserve) {
-                                  <span class="drop-tag drop-tag--out">{{
-                                    entry.player.slot ?? 'IR'
-                                  }}</span>
-                                } @else if (entry.player.out) {
-                                  <span class="drop-tag drop-tag--out">{{
-                                    entry.player.injuryStatus ?? 'Out'
-                                  }}</span>
-                                }
+                            <!-- With a full roster, any player who holds a spot can be the drop. -->
+                            @if (fullRoster() && drop()) {
+                              <label class="drop-player drop-pick">
+                                <input
+                                  type="radio"
+                                  name="scout-drop"
+                                  [checked]="entry === drop()"
+                                  [disabled]="!canDrop(entry)"
+                                  (change)="pickDrop(entry.player.playerId)"
+                                />
+                                <ng-container *ngTemplateOutlet="identity; context: { entry }" />
+                              </label>
+                            } @else {
+                              <span class="drop-player">
+                                <ng-container *ngTemplateOutlet="identity; context: { entry }" />
                               </span>
-                            </span>
+                            }
                           </td>
-                          <td class="num slot">{{ entry.player.slot ?? '' }}</td>
-                          <td class="num drop-score">{{ formatScore(entry.score) }}</td>
-                          @if (compare()) {
-                            <td
-                              class="num drop-delta"
-                              [class.drop-delta--up]="(entry.delta ?? 0) > 0"
-                              [class.drop-delta--down]="(entry.delta ?? 0) < 0"
-                            >
-                              {{ formatDelta(entry.delta) }}
-                            </td>
-                          }
-                          @if (slotsKnown()) {
-                            <td class="num">{{ starts(entry) }}</td>
-                            <td class="num drop-score">
-                              @if (entry.value && entry.score !== null && !entry.player.reserve) {
-                                @if (entry.weighed) {
-                                  {{ formatScore(entry.value.marginal) }}
-                                } @else {
-                                  <span
-                                    class="drop-unknown"
-                                    appTooltip="His club's schedule is missing"
-                                    >?</span
-                                  >
-                                }
-                              }
-                            </td>
-                          }
+                          <ng-container *ngTemplateOutlet="figures; context: { entry }" />
                         </tr>
+                      }
+                      @if (rosterAll() && rosterReserve().length > 0) {
+                        <tr class="roster-divider">
+                          <td colspan="6">On IR, no spot to free</td>
+                        </tr>
+                        @for (entry of rosterReserve(); track entry.player.playerId) {
+                          <tr>
+                            <td>
+                              <span class="drop-player">
+                                <ng-container *ngTemplateOutlet="identity; context: { entry }" />
+                              </span>
+                            </td>
+                            <ng-container *ngTemplateOutlet="figures; context: { entry }" />
+                          </tr>
+                        }
                       }
                     </tbody>
                   </table>
                 </div>
+                @if (rosterFoldable()) {
+                  <button type="button" class="roster-more" (click)="toggleRosterAll()">
+                    @if (rosterAll()) {
+                      Show fewer
+                    } @else {
+                      Show all {{ roster().length }}
+                    }
+                  </button>
+                }
               }
             </div>
           }
         </section>
+
+        <ng-template #identity let-entry="entry">
+          <app-team-logo
+            class="drop-logo"
+            [team]="entry.player.teamAbbrev"
+            [alt]="entry.player.teamAbbrev ?? ''"
+          />
+          <span class="drop-identity">
+            <span class="drop-name">{{ entry.player.name }}</span>
+            <app-position-chips [positions]="entry.player.positions" />
+            @if (entry.player.reserve) {
+              <span class="drop-tag drop-tag--out">{{ entry.player.slot ?? 'IR' }}</span>
+            } @else if (entry.player.out) {
+              <span class="drop-tag drop-tag--out">{{ entry.player.injuryStatus ?? 'Out' }}</span>
+            }
+          </span>
+        </ng-template>
+
+        <ng-template #figures let-entry="entry">
+          <td class="num slot roster-col--wide">{{ entry.player.slot ?? '' }}</td>
+          <td class="num drop-score roster-col--wide">{{ formatScore(entry.score) }}</td>
+          @if (compare()) {
+            <td
+              class="num drop-delta roster-col--wide"
+              [class.drop-delta--up]="(entry.delta ?? 0) > 0"
+              [class.drop-delta--down]="(entry.delta ?? 0) < 0"
+            >
+              {{ formatDelta(entry.delta) }}
+            </td>
+          }
+          @if (slotsKnown()) {
+            <td class="num">{{ starts(entry) }}</td>
+            <td class="num drop-score">
+              @if (entry.value && entry.score !== null && !entry.player.reserve) {
+                @if (entry.weighed) {
+                  {{ dropCost(entry) }}
+                } @else {
+                  <span class="drop-unknown">?</span>
+                }
+              }
+            </td>
+          }
+        </ng-template>
       }
 
       <!-- Which columns: the view, and what the view asks for, on a band on the table itself, so
@@ -454,7 +534,8 @@
             [sinceLabel]="sinceLabel()"
             [iceLabel]="iceLabel()"
             [showOwner]="pool() === 'all' || pool() === 'taken' || showMine()"
-            [swaps]="swaps()"
+            [gains]="gains()"
+            [dropName]="dropSurname()"
             [sort]="sort()"
             (sortBy)="sortBy($event)"
           />
