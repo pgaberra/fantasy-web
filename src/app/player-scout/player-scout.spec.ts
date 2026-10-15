@@ -252,8 +252,9 @@ describe('PlayerScoutComponent', () => {
     const table = ngMocks.find(fixture, ScoutTableComponent);
     expect(ngMocks.input(table, 'compare')).toBe(false);
     expect(ngMocks.input(table, 'view')).toBe('projection');
-    expect(ngMocks.findAll(fixture, SincePickerComponent)).toHaveLength(0);
+    expect(ngMocks.input(ngMocks.find(fixture, SincePickerComponent), 'on')).toBe(false);
     expect(page.sinceAnswer()).toBeNull();
+    expect(page.sinceCaption()).toBe('');
   });
 
   it('ranks everyone in the league on the rest of the season, scored by the league', async () => {
@@ -283,7 +284,8 @@ describe('PlayerScoutComponent', () => {
     fixture.detectChanges();
 
     expect(players).toHaveBeenCalledTimes(1);
-    expect(ngMocks.findAll(fixture, SincePickerComponent)).toHaveLength(1);
+    expect(ngMocks.input(ngMocks.find(fixture, SincePickerComponent), 'on')).toBe(true);
+    expect(page.sinceCaption()).toContain('the one of 7 Oct');
     expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'compare')).toBe(true);
     expect(page.sinceLabel()).toBe('vs 7 Oct');
     const montour = page.ranked().find((row) => row.player.playerId === '99');
@@ -610,8 +612,43 @@ describe('PlayerScoutComponent', () => {
     fixture.detectChanges();
 
     expect(page.sinceLabel()).toBe('no earlier projection');
-    expect(ngMocks.input(ngMocks.find(fixture, SincePickerComponent), 'answer')).toEqual({
-      kind: 'NONE',
-    });
+    expect(page.sinceCaption()).toContain('nothing to compare with');
+  });
+
+  it('switches the comparison on with the day picked, and off with the day kept', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.pickSince('2026-10-05');
+    await fixture.whenStable();
+
+    expect(page.compare()).toBe(true);
+    expect(query(players.mock.lastCall!)).toEqual({ since: '2026-10-05', recentGames: 5 });
+
+    page.clearCompare();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(page.compare()).toBe(false);
+    expect(page.since()).toBe('2026-10-05');
+    expect(query(players.mock.lastCall!)).toEqual({ since: null, recentGames: 5 });
+    expect(ngMocks.input(ngMocks.find(fixture, SincePickerComponent), 'since')).toBe('2026-10-05');
+  });
+
+  it('keeps the view band on the list through a reload, and the room line off until it is back', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+    expect(page.listReady()).toBe(true);
+    expect(ngMocks.findAll(fixture, '.room-box')).toHaveLength(1);
+
+    // A read that never answers: the list is loading until the test ends.
+    players.mockReturnValue(new Observable<ScoutList>());
+    page.pickSince('2026-10-05');
+    fixture.detectChanges();
+
+    expect(page.loading()).toBe(true);
+    expect(page.listReady()).toBe(false);
+    expect(ngMocks.findAll(fixture, '.viewbar')).toHaveLength(1);
+    expect(ngMocks.findAll(fixture, '.room-box')).toHaveLength(0);
   });
 });

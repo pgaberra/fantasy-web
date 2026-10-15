@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, model } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import {
   EspnLeagueSyncComponent,
@@ -34,12 +34,20 @@ import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
   templateUrl: './league-field.html',
   styleUrl: './league-field.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.league-field--inline]': "layout() === 'inline'" },
 })
 export class LeagueFieldComponent {
   readonly picker = inject(YahooLeaguePicker);
 
   readonly platform = model.required<Platform>();
   readonly espnLeague = model<ChosenLeague | null>(null);
+
+  /**
+   * Stacked, the label over the tabs over the league, as a field among the planner's settings;
+   * inline, all three on one line, as a choice on a title line (Player Scout). The ESPN card is
+   * too much for a line and drops under it either way.
+   */
+  readonly layout = input<'stacked' | 'inline'>('stacked');
 
   /** Whether ESPN leagues are offered at all: where Team Power Rankings offers them. */
   protected readonly espnOffered = environment.espnLeaguesEnabled;
