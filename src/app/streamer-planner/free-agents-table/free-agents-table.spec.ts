@@ -527,9 +527,7 @@ describe('FreeAgentsTableComponent', () => {
     expect(points.scoreTip()).toBe('Projected points, and per game under it');
 
     const categories = render('category').point.componentInstance;
-    expect(categories.scoreTip()).toBe(
-      "Ranks players based on their relative value across your league's scoring categories, per game under it.",
-    );
+    expect(categories.scoreTip()).toBe('Z-Score across your categories, and per game under it');
   });
 
   it('marks no column while the list is ranked by every category', () => {

@@ -168,8 +168,8 @@ export class ScoutTableComponent {
 
   readonly rankTip = computed(() =>
     this.comparing()
-      ? 'His place among every player in the league the model projects, whoever holds him, and the places gained or lost since the chosen day'
-      : 'His place among every player in the league the model projects, whoever holds him',
+      ? 'League rank, and places moved since the chosen day'
+      : 'Rank among every player in the league',
   );
 
   readonly scoreHeading = computed(() =>
@@ -221,7 +221,7 @@ export class ScoutTableComponent {
       return '';
     }
     if (row.thenRank === null) {
-      return 'The model had no line for him on the chosen day';
+      return 'No projection on the chosen day';
     }
     return `Ranked ${row.thenRank} of these players on the chosen day, ${row.rank} today`;
   }
@@ -311,9 +311,7 @@ export class ScoutTableComponent {
   iceTip(row: ScoutRow): string {
     const usage = row.usage;
     if (!usage) {
-      return row.line.type === 'goalie'
-        ? 'A goalie has no ice role to measure'
-        : 'No game of his in the recent stretch';
+      return row.line.type === 'goalie' ? 'A goalie has no ice role to measure' : 'No recent games';
     }
     const games = `${usage.recent.games} recent ${usage.recent.games === 1 ? 'game' : 'games'}`;
     if (!usage.baseline) {
@@ -360,14 +358,14 @@ export class ScoutTableComponent {
   listedTip(row: ScoutRow): string {
     const usage = row.usage;
     if (!usage?.listedNow) {
-      return 'The lineup page does not list him';
+      return "Not on Daily Faceoff's lineup page";
     }
     const moved = [usage.lineMove, usage.powerPlayMove]
       .filter((move): move is NonNullable<typeof move> => move !== null)
       .map((move) => `${move.from} to ${move.to}`);
     return moved.length > 0
-      ? `Daily Faceoff lists him ${moved.join(' and ')} since the recent games began`
-      : 'Where Daily Faceoff lists him, unchanged over the recent games';
+      ? `Moved ${moved.join(' and ')} on Daily Faceoff`
+      : 'Unchanged on Daily Faceoff';
   }
 
   // --- The gain ---------------------------------------------------------------------------------
@@ -401,12 +399,40 @@ export class ScoutTableComponent {
   }
 
   /**
-   * Who holds him, for a list of more than the wire: "FA" or the team's name, the user's own
-   * included. It read "Mine" there once, and "Mine" beside a column of team names looked like
-   * one more team; the template marks the user's own by look instead.
+   * The pill a pickable row wears: "Waivers" always, since a claim changes what the reader does
+   * next; "FA" only on a list that also holds taken players, where it is the mark to scan for.
+   * A taken player wears none.
+   */
+  availabilityTag(row: ScoutRow): string | null {
+    if (!this.pickable(row)) {
+      return null;
+    }
+    if (this.onWaivers(row)) {
+      return 'Waivers';
+    }
+    return this.showOwner() ? 'FA' : null;
+  }
+
+  /**
+   * Who holds him, for a list of more than the wire: the team's name, the user's own included.
+   * It read "Mine" there once, and "Mine" beside a column of team names looked like one more
+   * team; the template marks the user's own by look instead.
    */
   ownerTag(row: ScoutRow): string {
     return row.scout.owner?.teamName ?? 'FA';
+  }
+
+  /** Whether the list has anyone to pick up: only then is another team's player the one to recede. */
+  private readonly anyPickable = computed(() => this.rows().some((row) => this.pickable(row)));
+
+  /**
+   * Whether the row steps back in tone: another team's player on a list that also has players to
+   * pick up. He stays as context, but the rows the reader can act on are the ones that keep full
+   * ink. A list of taken players only, or of the user's own, dims nothing.
+   */
+  dimmed(row: ScoutRow): boolean {
+    const owner = row.scout.owner;
+    return owner !== null && !owner.mine && this.anyPickable();
   }
 
   isNil(stat: LineStat): boolean {

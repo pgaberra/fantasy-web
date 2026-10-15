@@ -174,7 +174,7 @@ export class FreeAgentsTableComponent {
   readonly scoreTip = computed(() =>
     this.scoringType() === 'points'
       ? 'Projected points, and per game under it'
-      : "Ranks players based on their relative value across your league's scoring categories, per game under it.",
+      : 'Z-Score across your categories, and per game under it',
   );
 
   ariaSort(key: FreeAgentSortKey): 'ascending' | 'descending' | null {

@@ -1,212 +1,493 @@
 <div class="player-scout">
   <header class="hero">
     <h1>Player Scout</h1>
-    <p class="lede">
-      Every player in your league on the AI projection for the rest of the season. Compare it with
-      the projection of any earlier day to see whose outlook has moved, and switch to the ice to see
-      who is actually playing more.
-    </p>
+    <p class="lede">Every player in your league, projected for the rest of the season.</p>
   </header>
 
   <section class="card" aria-labelledby="scout-list-title">
     <div class="card-head">
-      <h2 id="scout-list-title" class="card-title">
-        <app-icon name="user-plus" />Players
-        <app-help-tip
-          label="How these are ranked"
-          text="Every player the league holds, scored with your league's settings on the AI projection for the rest of the season. With a comparison on, each figure wears its change since the day you pick (the earlier projection re-spread over the games his club has left, so the two compare stat by stat), and the rank its places gained. The ice view shows what the ice has measured instead: ice a game and share of his club's power play over each club's last few games against his games before. Your own team is weighed night by night over the rest of the season, so the player to drop is the one whose going costs your lineup least."
-        />
-      </h2>
-      <div class="views" role="group" aria-label="What to show">
-        <button
-          type="button"
-          class="view"
-          [class.view--active]="view() === 'projection'"
-          [attr.aria-pressed]="view() === 'projection'"
-          (click)="view.set('projection')"
-        >
-          Projection
-        </button>
-        <button
-          type="button"
-          class="view"
-          [class.view--active]="view() === 'ice'"
-          [attr.aria-pressed]="view() === 'ice'"
-          (click)="view.set('ice')"
-        >
-          On the ice
-        </button>
-      </div>
+      <h2 id="scout-list-title" class="card-title"><app-icon name="user-plus" />Players</h2>
+      <!-- The league on the title line, set once and remembered: the page is "Players of this
+           league", and the choice is rarely changed. -->
+      <app-league-field
+        class="league"
+        layout="inline"
+        [(platform)]="platform"
+        [(espnLeague)]="espnLeague"
+      />
     </div>
 
-    <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
-
     @if (league()) {
-      <div class="controls">
-        <!-- Whose players, as Yahoo's player list asks it: by status or one team, an NHL club,
-             and the user's own beside whatever is shown. -->
-        <div class="filters">
-          <label class="field">
-            <span class="field-label">Show</span>
-            <select aria-label="Whose players to show" [value]="pool()" (change)="onPool($event)">
-              <optgroup label="By status">
-                <option value="available">Available players</option>
-                <option value="fa">Free agents only</option>
-                <option value="waivers">On waivers only</option>
-                <option value="taken">Taken players</option>
-                <option value="all">All players</option>
+      <!-- Which rows: whose players, as Yahoo's player list asks it (by status or one team), at
+           which positions, from which NHL club, the user's own beside them, or one by name. One
+           toolbar, since they are all the same question. -->
+      <div class="toolbar">
+        <label class="field">
+          <span class="field-label">Show</span>
+          <select aria-label="Whose players to show" [value]="pool()" (change)="onPool($event)">
+            <optgroup label="By status">
+              <option value="available">Available players</option>
+              <option value="fa">Free agents only</option>
+              <option value="waivers">On waivers only</option>
+              <option value="taken">Taken players</option>
+              <option value="all">All players</option>
+            </optgroup>
+            @if (leagueTeams().length > 0) {
+              <optgroup label="By team">
+                @for (team of leagueTeams(); track team.pool) {
+                  <option [value]="team.pool">
+                    {{ team.mine ? 'My team: ' + team.name : team.name }}
+                  </option>
+                }
               </optgroup>
-              @if (leagueTeams().length > 0) {
-                <optgroup label="By team">
-                  @for (team of leagueTeams(); track team.pool) {
-                    <option [value]="team.pool">
-                      {{ team.mine ? 'My team: ' + team.name : team.name }}
-                    </option>
-                  }
-                </optgroup>
-              }
-            </select>
-          </label>
-          <label class="field">
-            <span class="field-label">Club</span>
-            <select aria-label="NHL club" [value]="nhlTeam() ?? ''" (change)="onNhlTeam($event)">
-              <option value="">All clubs</option>
-              @for (club of nhlTeams(); track club) {
-                <option [value]="club">{{ club }}</option>
-              }
-            </select>
-          </label>
-          <label
-            class="tick"
-            [class.tick--moot]="poolShowsMine()"
-            appTooltip="Your own players in the same list, so a pickup reads against the player he would replace"
+            }
+          </select>
+        </label>
+        <!-- Skaters and goalies are one list, as the planner's is: "All" is everyone, "All
+             skaters" picks the four skater positions in one press, and G is the goalies. -->
+        <div class="pills" role="group" aria-label="Positions to show">
+          <button
+            type="button"
+            class="pill"
+            [class.pill--active]="positions().size === 0"
+            [attr.aria-pressed]="positions().size === 0"
+            (click)="clearPositions()"
           >
-            <input
-              type="checkbox"
-              [checked]="showMine() || poolShowsMine()"
-              [disabled]="poolShowsMine() || teamStatus() !== 'ready'"
-              (change)="toggleShowMine()"
-            />
-            Show my team
-          </label>
+            All
+          </button>
+          <button
+            type="button"
+            class="pill"
+            [class.pill--active]="allSkaters()"
+            [attr.aria-pressed]="allSkaters()"
+            (click)="toggleAllSkaters()"
+          >
+            All skaters
+          </button>
+          @for (option of positionOptions; track option) {
+            <button
+              type="button"
+              class="pill"
+              [class.pill--active]="positions().has(option)"
+              [attr.aria-pressed]="positions().has(option)"
+              (click)="togglePosition(option)"
+            >
+              {{ option }}
+            </button>
+          }
+        </div>
+        <label class="field">
+          <span class="field-label">Club</span>
+          <select aria-label="NHL club" [value]="nhlTeam() ?? ''" (change)="onNhlTeam($event)">
+            <option value="">All clubs</option>
+            @for (club of nhlTeams(); track club) {
+              <option [value]="club">{{ club }}</option>
+            }
+          </select>
+        </label>
+        <label class="tick" [class.tick--moot]="poolShowsMine()">
           <input
-            class="search"
+            type="checkbox"
+            [checked]="showMine() || poolShowsMine()"
+            [disabled]="poolShowsMine() || teamStatus() !== 'ready'"
+            (change)="toggleShowMine()"
+          />
+          Show my team
+        </label>
+        <label class="search">
+          <app-icon name="search" [size]="16" />
+          <input
+            class="search-input"
             type="search"
             placeholder="Search players"
             aria-label="Search players"
             [value]="search()"
             (input)="onSearch($event)"
           />
-        </div>
-        <!-- Skaters and goalies are one list, as the planner's is: "All" is everyone, "All
-             skaters" picks the four skater positions in one press, and G is the goalies. -->
-        <div class="filters">
-          <div class="pills" role="group" aria-label="Positions to show">
-            <button
-              type="button"
-              class="pill"
-              [class.pill--active]="positions().size === 0"
-              [attr.aria-pressed]="positions().size === 0"
-              (click)="clearPositions()"
-            >
-              All
-            </button>
-            <button
-              type="button"
-              class="pill"
-              [class.pill--active]="allSkaters()"
-              [attr.aria-pressed]="allSkaters()"
-              (click)="toggleAllSkaters()"
-            >
-              All skaters
-            </button>
-            @for (option of positionOptions; track option) {
+        </label>
+      </div>
+    }
+
+    @if (!league()) {
+      <p class="prompt">Select a league above to scout its players.</p>
+    } @else {
+      @if (listReady()) {
+        <!-- What a pickup costs, in one line above the list; the roster itself is folded under it,
+             since the page is for the league and the roster is the follow-up question. A full roster
+             asks which player goes: the line offers the few a drop would usually be, and the list
+             prices every pickup against the one chosen. -->
+        <section class="room-box" aria-label="Room for a pickup">
+          <div class="room-line">
+            <div class="room-text">
+              @switch (teamStatus()) {
+                @case ('loading') {
+                  <p class="room-note">
+                    <app-loading-indicator variant="inline" label="Loading your team" />
+                  </p>
+                }
+                @case ('error') {
+                  <p class="room-note">
+                    Couldn't load your team in this league, so no drops are suggested.
+                    <button type="button" class="btn btn-secondary btn-sm" (click)="retryTeam()">
+                      Try again
+                    </button>
+                  </p>
+                }
+                @case ('not-found') {
+                  <p class="room-note">
+                    You have no team in this league, so no drops are suggested.
+                  </p>
+                }
+                @case ('ready') {
+                  @if (!fullRoster()) {
+                    <ul class="room-list">
+                      @if (room().openSpots > 0) {
+                        <li class="room">
+                          <app-icon name="check-circle" [size]="14" />
+                          <span
+                            >{{ openSpotsText(room().openSpots) }}: pick up without dropping
+                            anyone.</span
+                          >
+                        </li>
+                      }
+                      @for (move of room().toReserve; track move.player.playerId) {
+                        <li class="room">
+                          <app-icon name="check-circle" [size]="14" />
+                          <span>
+                            Move <strong>{{ move.player.name }}</strong>
+                            @if (move.player.injuryStatus) {
+                              <span class="drop-tag drop-tag--out">{{
+                                move.player.injuryStatus
+                              }}</span>
+                            }
+                            to {{ move.slot }} to open a spot.
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <div class="room floor">
+                      <app-icon name="user-minus" [size]="14" />
+                      <div class="floor-body">
+                        <span class="floor-lead">
+                          @if (slotsKnown()) {
+                            Full roster.
+                          }
+                          @if (drop()) {
+                            If you drop
+                          } @else {
+                            None of your {{ shown() }} has a projection.
+                          }
+                        </span>
+                        @if (drop(); as drop) {
+                          <!-- The drop as a choice of a few: the cheapest first and chosen, the next
+                               cheapest beside him, and the whole roster behind Other. Pressing one
+                               re-prices the list in place. -->
+                          <div class="drop-chips" role="radiogroup" aria-label="The player to drop">
+                            @for (chip of dropChips(); track chip.player.playerId) {
+                              <button
+                                type="button"
+                                class="pill pill--drop"
+                                role="radio"
+                                [class.pill--active]="chip === drop"
+                                [attr.aria-checked]="chip === drop"
+                                (click)="pickDrop(chip.player.playerId)"
+                              >
+                                <span class="pill-name">{{ chip.player.name }}</span>
+                                <app-position-chips [positions]="chip.player.positions" />
+                                @if (chip.player.out) {
+                                  <span class="drop-tag drop-tag--out">{{
+                                    chip.player.injuryStatus ?? 'Out'
+                                  }}</span>
+                                }
+                                <span class="pill-cost">{{ dropCost(chip) }}</span>
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="pill pill--other"
+                              aria-controls="scout-roster"
+                              [attr.aria-expanded]="rosterOpen()"
+                              (click)="openRoster()"
+                            >
+                              Other…
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              }
+            </div>
+            @if (teamStatus() === 'ready') {
               <button
                 type="button"
-                class="pill"
-                [class.pill--active]="positions().has(option)"
-                [attr.aria-pressed]="positions().has(option)"
-                (click)="togglePosition(option)"
+                class="roster-toggle"
+                aria-controls="scout-roster"
+                [attr.aria-expanded]="rosterOpen()"
+                (click)="toggleRoster()"
               >
-                {{ option }}
+                Your {{ shown() }} ({{ roster().length }})
+                <app-icon class="chevron" name="chevron-down" [size]="14" />
               </button>
             }
           </div>
-        </div>
 
-        @if (view() === 'projection') {
-          <!-- The comparison: off, the list is today's projection and nothing else. -->
-          <div class="compare" [class.compare--on]="compare()">
-            <label class="tick tick--compare">
-              <input type="checkbox" [checked]="compare()" (change)="toggleCompare()" />
-              Compare with an earlier projection
-            </label>
-            @if (compare()) {
+          @if (fullRoster() && drop()) {
+            <!-- Written out rather than left to a tooltip, since a phone shows none: why the chosen
+                 drop is cheap when it is his seat, and what the costs and gains are figures of. -->
+            <p class="room-caption">
+              @if (dropWhy(); as why) {
+                <span class="drop-why">{{ why }}</span>
+              }
+              Cost and gain are what your lineup loses or gains over the rest of the season, with
+              every night's starters set.
+            </p>
+          }
+
+          @if (teamStatus() === 'ready' && rosterOpen()) {
+            <div id="scout-roster" class="roster">
+              <p class="roster-caption">
+                @if (teamName(); as name) {
+                  {{ name }},
+                }
+                the cheapest to drop first.
+                @if (rosterUnweighed()) {
+                  A ? is a club whose nights the schedule lacks.
+                }
+              </p>
+              @if (roster().length === 0) {
+                <p class="room-note">None of your {{ shown() }} is on the roster.</p>
+              } @else {
+                <div class="table-scroll">
+                  <table class="roster-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Player</th>
+                        <th scope="col" class="num roster-col--wide">Slot</th>
+                        <th
+                          scope="col"
+                          class="num roster-col--wide"
+                          appTooltip="Rest-of-season AI projection"
+                        >
+                          Proj.
+                        </th>
+                        @if (compare()) {
+                          <th scope="col" class="num roster-col--wide">Change</th>
+                        }
+                        @if (slotsKnown()) {
+                          <th
+                            scope="col"
+                            class="num"
+                            appTooltip="Nights he starts for you, of his club's games"
+                          >
+                            Starts
+                          </th>
+                          <th scope="col" class="num">Lineup cost</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of rosterRows(); track entry.player.playerId) {
+                        <tr [class.roster-row--drop]="entry === drop()">
+                          <td>
+                            <!-- With a full roster, any player who holds a spot can be the drop. -->
+                            @if (fullRoster() && drop()) {
+                              <label class="drop-player drop-pick">
+                                <input
+                                  type="radio"
+                                  name="scout-drop"
+                                  [checked]="entry === drop()"
+                                  [disabled]="!canDrop(entry)"
+                                  (change)="pickDrop(entry.player.playerId)"
+                                />
+                                <ng-container *ngTemplateOutlet="identity; context: { entry }" />
+                              </label>
+                            } @else {
+                              <span class="drop-player">
+                                <ng-container *ngTemplateOutlet="identity; context: { entry }" />
+                              </span>
+                            }
+                          </td>
+                          <ng-container *ngTemplateOutlet="figures; context: { entry }" />
+                        </tr>
+                      }
+                      @if (rosterAll() && rosterReserve().length > 0) {
+                        <tr class="roster-divider">
+                          <td colspan="6">On IR, no spot to free</td>
+                        </tr>
+                        @for (entry of rosterReserve(); track entry.player.playerId) {
+                          <tr>
+                            <td>
+                              <span class="drop-player">
+                                <ng-container *ngTemplateOutlet="identity; context: { entry }" />
+                              </span>
+                            </td>
+                            <ng-container *ngTemplateOutlet="figures; context: { entry }" />
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                @if (rosterFoldable()) {
+                  <button type="button" class="roster-more" (click)="toggleRosterAll()">
+                    @if (rosterAll()) {
+                      Show fewer
+                    } @else {
+                      Show all {{ roster().length }}
+                    }
+                  </button>
+                }
+              }
+            </div>
+          }
+        </section>
+
+        <ng-template #identity let-entry="entry">
+          <app-team-logo
+            class="drop-logo"
+            [team]="entry.player.teamAbbrev"
+            [alt]="entry.player.teamAbbrev ?? ''"
+          />
+          <span class="drop-identity">
+            <span class="drop-name">{{ entry.player.name }}</span>
+            <app-position-chips [positions]="entry.player.positions" />
+            @if (entry.player.reserve) {
+              <span class="drop-tag drop-tag--out">{{ entry.player.slot ?? 'IR' }}</span>
+            } @else if (entry.player.out) {
+              <span class="drop-tag drop-tag--out">{{ entry.player.injuryStatus ?? 'Out' }}</span>
+            }
+          </span>
+        </ng-template>
+
+        <ng-template #figures let-entry="entry">
+          <td class="num slot roster-col--wide">{{ entry.player.slot ?? '' }}</td>
+          <td class="num drop-score roster-col--wide">{{ formatScore(entry.score) }}</td>
+          @if (compare()) {
+            <td
+              class="num drop-delta roster-col--wide"
+              [class.drop-delta--up]="(entry.delta ?? 0) > 0"
+              [class.drop-delta--down]="(entry.delta ?? 0) < 0"
+            >
+              {{ formatDelta(entry.delta) }}
+            </td>
+          }
+          @if (slotsKnown()) {
+            <td class="num">{{ starts(entry) }}</td>
+            <td class="num drop-score">
+              @if (entry.value && entry.score !== null && !entry.player.reserve) {
+                @if (entry.weighed) {
+                  {{ dropCost(entry) }}
+                } @else {
+                  <span class="drop-unknown">?</span>
+                }
+              }
+            </td>
+          }
+        </ng-template>
+      }
+
+      <!-- Which columns: the view, and what the view asks for, on a band on the table itself, so
+           the switch sits with the columns it changes and the setting sits with its switch. The
+           band stays through a reload, so changing the day does not take the control away. -->
+      <div class="list">
+        <div class="viewbar">
+          <div class="views" role="group" aria-label="What to show">
+            <button
+              type="button"
+              class="view"
+              [class.view--active]="view() === 'projection'"
+              [attr.aria-pressed]="view() === 'projection'"
+              (click)="view.set('projection')"
+            >
+              Projection
+            </button>
+            <button
+              type="button"
+              class="view"
+              [class.view--active]="view() === 'ice'"
+              [attr.aria-pressed]="view() === 'ice'"
+              (click)="view.set('ice')"
+            >
+              On the ice
+            </button>
+          </div>
+          @if (view() === 'projection') {
+            <!-- The comparison: off, the list is today's projection and nothing else. -->
+            <div class="setting">
+              <span class="field-label">Compare with</span>
               <app-since-picker
+                [on]="compare()"
                 [since]="since()"
-                [answer]="sinceAnswer()"
                 [today]="today"
-                (sinceChange)="since.set($event)"
+                (sinceChange)="pickSince($event)"
+                (cleared)="clearCompare()"
               />
-              <div class="segmented" role="group" aria-label="Which way the projection moved">
+            </div>
+            @if (compare()) {
+              <div class="setting">
+                <span class="field-label">Moved</span>
+                <div class="segmented" role="group" aria-label="Which way the projection moved">
+                  <button
+                    type="button"
+                    [class.active]="movers() === 'all'"
+                    [attr.aria-pressed]="movers() === 'all'"
+                    (click)="movers.set('all')"
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    class="movers--risers"
+                    [class.active]="movers() === 'risers'"
+                    [attr.aria-pressed]="movers() === 'risers'"
+                    (click)="movers.set('risers')"
+                  >
+                    Risers
+                  </button>
+                  <button
+                    type="button"
+                    class="movers--fallers"
+                    [class.active]="movers() === 'fallers'"
+                    [attr.aria-pressed]="movers() === 'fallers'"
+                    (click)="movers.set('fallers')"
+                  >
+                    Fallers
+                  </button>
+                </div>
+              </div>
+              @if (sinceCaption(); as caption) {
+                <p class="caption" aria-live="polite">{{ caption }}</p>
+              }
+            }
+          } @else {
+            <!-- The ice's window: each club's last few games, or since the comparison's day. One
+                 game says nothing, so the smallest stretch offered is three. -->
+            <div class="setting">
+              <span class="field-label">Over</span>
+              <div class="segmented" role="group" aria-label="The games the ice is read over">
                 <button
                   type="button"
-                  [class.active]="movers() === 'all'"
-                  [attr.aria-pressed]="movers() === 'all'"
-                  (click)="movers.set('all')"
+                  [class.active]="iceWindow() === 'last'"
+                  [attr.aria-pressed]="iceWindow() === 'last'"
+                  (click)="iceWindowPicked.set('last')"
                 >
-                  All
+                  Each club's last
                 </button>
                 <button
                   type="button"
-                  class="movers--risers"
-                  [class.active]="movers() === 'risers'"
-                  [attr.aria-pressed]="movers() === 'risers'"
-                  appTooltip="Only players the projection makes more of than on the chosen day"
-                  (click)="movers.set('risers')"
+                  [class.active]="iceWindow() === 'since'"
+                  [attr.aria-pressed]="iceWindow() === 'since'"
+                  [disabled]="!compare() || since() === null"
+                  appTooltip="Pick a comparison day in the projection view first"
+                  (click)="iceWindowPicked.set('since')"
                 >
-                  Risers
-                </button>
-                <button
-                  type="button"
-                  class="movers--fallers"
-                  [class.active]="movers() === 'fallers'"
-                  [attr.aria-pressed]="movers() === 'fallers'"
-                  appTooltip="Only players the projection makes less of than on the chosen day"
-                  (click)="movers.set('fallers')"
-                >
-                  Fallers
+                  Since the chosen day
                 </button>
               </div>
-            }
-          </div>
-        } @else {
-          <!-- The ice's window: each club's last few games, or since the comparison's day. One
-               game says nothing, so the smallest stretch offered is three. -->
-          <div class="ice-window">
-            <span class="field-label">Over</span>
-            <div class="segmented" role="group" aria-label="The games the ice is read over">
-              <button
-                type="button"
-                [class.active]="iceWindow() === 'last'"
-                [attr.aria-pressed]="iceWindow() === 'last'"
-                (click)="iceWindowPicked.set('last')"
-              >
-                Each club's last
-              </button>
-              <button
-                type="button"
-                [class.active]="iceWindow() === 'since'"
-                [attr.aria-pressed]="iceWindow() === 'since'"
-                [disabled]="!compare() || since() === null"
-                appTooltip="His games since the day the projection is compared with; pick a day under Compare in the projection view"
-                (click)="iceWindowPicked.set('since')"
-              >
-                Since the chosen day
-              </button>
-            </div>
-            @if (iceWindow() === 'last') {
-              <label class="field">
+              @if (iceWindow() === 'last') {
                 <select
                   aria-label="Recent games"
                   [value]="recentGames()"
@@ -218,357 +499,76 @@
                     </option>
                   }
                 </select>
-              </label>
-            }
-            <span class="ice-caption">
+              }
+            </div>
+            <p class="caption">
               Measured ice over {{ iceLabel() }}, against his earlier games this season (or last
               season while this one is short). Hover a figure for the games it stands on.
-            </span>
+            </p>
+          }
+        </div>
+
+        @if (failure()) {
+          <div class="list-state">
+            <app-error-state
+              title="Couldn't load the players"
+              [error]="failure()"
+              (retry)="retry()"
+            />
+          </div>
+        } @else if (loading()) {
+          <div class="list-state"><app-loading-indicator /></div>
+        } @else if (outOfSeason()) {
+          <p class="empty">The season hasn't started yet.</p>
+        } @else if (noPlayers()) {
+          <p class="empty">No player in this league has a projection.</p>
+        } @else if (filtered().length === 0) {
+          <p class="empty">{{ emptyText() }}</p>
+        } @else {
+          <app-scout-table
+            [rows]="visible()"
+            [scoringType]="scoringType()"
+            [categories]="categories()"
+            [view]="view()"
+            [compare]="compare()"
+            [sinceLabel]="sinceLabel()"
+            [iceLabel]="iceLabel()"
+            [showOwner]="pool() === 'all' || pool() === 'taken' || showMine()"
+            [gains]="gains()"
+            [dropName]="dropSurname()"
+            [sort]="sort()"
+            (sortBy)="sortBy($event)"
+          />
+          <div class="list-foot">
+            <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
+            @if (pageCount() > 1) {
+              <nav class="pager" aria-label="Pages of players">
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm pager-button"
+                  aria-label="Previous page"
+                  appTooltip="Previous page"
+                  [disabled]="currentPage() === 0"
+                  (click)="goToPage(currentPage() - 1)"
+                >
+                  <app-icon name="arrow-left" [size]="16" />
+                </button>
+                <span class="pager-label">Page {{ currentPage() + 1 }} of {{ pageCount() }}</span>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm pager-button"
+                  aria-label="Next page"
+                  appTooltip="Next page"
+                  [disabled]="currentPage() === pageCount() - 1"
+                  (click)="goToPage(currentPage() + 1)"
+                >
+                  <app-icon name="arrow-right" [size]="16" />
+                </button>
+              </nav>
+            }
           </div>
         }
       </div>
-    }
-
-    @if (!league()) {
-      <p class="prompt">Select a league above to scout its players.</p>
-    } @else if (failure()) {
-      <app-error-state title="Couldn't load the players" [error]="failure()" (retry)="retry()" />
-    } @else if (loading()) {
-      <app-loading-indicator />
-    } @else if (outOfSeason()) {
-      <p class="empty">
-        The season isn't under way, so there is no rest of it to scout. Come back after opening
-        night.
-      </p>
-    } @else if (noPlayers()) {
-      <p class="empty">No player in this league has a projection.</p>
-    } @else {
-      <!-- What a pickup costs, in one line above the list; the roster itself is folded under it,
-           since the page is for the league and the roster is the follow-up question. A full roster
-           asks which player goes: the line offers the few a drop would usually be, and the list
-           prices every pickup against the one chosen. -->
-      <section class="room-box" aria-label="Room for a pickup">
-        <div class="room-line">
-          <div class="room-text">
-            @switch (teamStatus()) {
-              @case ('loading') {
-                <p class="room-note">
-                  <app-loading-indicator variant="inline" label="Loading your team" />
-                </p>
-              }
-              @case ('error') {
-                <p class="room-note">
-                  Couldn't load your team in this league, so no drops are suggested.
-                  <button type="button" class="btn btn-secondary btn-sm" (click)="retryTeam()">
-                    Try again
-                  </button>
-                </p>
-              }
-              @case ('not-found') {
-                <p class="room-note">You have no team in this league, so no drops are suggested.</p>
-              }
-              @case ('ready') {
-                @if (!fullRoster()) {
-                  <ul class="room-list">
-                    @if (room().openSpots > 0) {
-                      <li class="room">
-                        <app-icon name="check-circle" [size]="14" />
-                        <span
-                          >{{ openSpotsText(room().openSpots) }}: pick up without dropping
-                          anyone.</span
-                        >
-                      </li>
-                    }
-                    @for (move of room().toReserve; track move.player.playerId) {
-                      <li class="room">
-                        <app-icon name="check-circle" [size]="14" />
-                        <span>
-                          Move <strong>{{ move.player.name }}</strong>
-                          @if (move.player.injuryStatus) {
-                            <span class="drop-tag drop-tag--out">{{
-                              move.player.injuryStatus
-                            }}</span>
-                          }
-                          to {{ move.slot }}: his roster spot then takes a pickup, nobody dropped.
-                        </span>
-                      </li>
-                    }
-                  </ul>
-                } @else {
-                  <div class="room floor">
-                    <app-icon name="user-minus" [size]="14" />
-                    <div class="floor-body">
-                      <span class="floor-lead">
-                        @if (slotsKnown()) {
-                          Full roster.
-                        }
-                        @if (drop()) {
-                          If you drop
-                        } @else {
-                          None of your {{ shown() }} has a projection.
-                        }
-                      </span>
-                      @if (drop(); as drop) {
-                        <!-- The drop as a choice of a few: the cheapest first and chosen, the next
-                             cheapest beside him, and the whole roster behind Other. Pressing one
-                             re-prices the list in place. -->
-                        <div class="drop-chips" role="radiogroup" aria-label="The player to drop">
-                          @for (chip of dropChips(); track chip.player.playerId) {
-                            <button
-                              type="button"
-                              class="pill pill--drop"
-                              role="radio"
-                              [class.pill--active]="chip === drop"
-                              [attr.aria-checked]="chip === drop"
-                              (click)="pickDrop(chip.player.playerId)"
-                            >
-                              <span class="pill-name">{{ chip.player.name }}</span>
-                              <app-position-chips [positions]="chip.player.positions" />
-                              @if (chip.player.out) {
-                                <span class="drop-tag drop-tag--out">{{
-                                  chip.player.injuryStatus ?? 'Out'
-                                }}</span>
-                              }
-                              <span class="pill-cost">{{ dropCost(chip) }}</span>
-                            </button>
-                          }
-                          <button
-                            type="button"
-                            class="pill pill--other"
-                            aria-controls="scout-roster"
-                            [attr.aria-expanded]="rosterOpen()"
-                            (click)="openRoster()"
-                          >
-                            Other…
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                }
-              }
-            }
-          </div>
-          @if (teamStatus() === 'ready') {
-            <button
-              type="button"
-              class="roster-toggle"
-              aria-controls="scout-roster"
-              [attr.aria-expanded]="rosterOpen()"
-              (click)="toggleRoster()"
-            >
-              Your {{ shown() }} ({{ roster().length }})
-              <app-icon class="chevron" name="chevron-down" [size]="14" />
-            </button>
-          }
-        </div>
-
-        @if (fullRoster() && drop()) {
-          <!-- Written out rather than left to a tooltip, since a phone shows none: why the chosen
-               drop is cheap when it is his seat, and what the costs and gains are figures of. -->
-          <p class="room-caption">
-            @if (dropWhy(); as why) {
-              <span class="drop-why">{{ why }}</span>
-            }
-            Cost and gain are what your lineup loses or gains over the rest of the season, with
-            every night's starters set.
-          </p>
-        }
-
-        @if (teamStatus() === 'ready' && rosterOpen()) {
-          <div id="scout-roster" class="roster">
-            <p class="roster-caption">
-              @if (teamName(); as name) {
-                {{ name }},
-              }
-              the cheapest to drop first.
-              @if (rosterUnweighed()) {
-                A ? is a club whose nights the schedule lacks.
-              }
-            </p>
-            @if (roster().length === 0) {
-              <p class="room-note">None of your {{ shown() }} is on the roster.</p>
-            } @else {
-              <div class="table-scroll">
-                <table class="roster-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Player</th>
-                      <th scope="col" class="num roster-col--wide">Slot</th>
-                      <th
-                        scope="col"
-                        class="num roster-col--wide"
-                        appTooltip="The AI projection for the rest of the season, scored by your league's settings"
-                      >
-                        Proj.
-                      </th>
-                      @if (compare()) {
-                        <th
-                          scope="col"
-                          class="num roster-col--wide"
-                          appTooltip="The change in his score since the chosen day"
-                        >
-                          Change
-                        </th>
-                      }
-                      @if (slotsKnown()) {
-                        <th
-                          scope="col"
-                          class="num"
-                          appTooltip="Nights he starts in your lineup, of the nights his club plays"
-                        >
-                          Starts
-                        </th>
-                        <th scope="col" class="num">Lineup cost</th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (entry of rosterRows(); track entry.player.playerId) {
-                      <tr [class.roster-row--drop]="entry === drop()">
-                        <td>
-                          <!-- With a full roster, any player who holds a spot can be the drop. -->
-                          @if (fullRoster() && drop()) {
-                            <label class="drop-player drop-pick">
-                              <input
-                                type="radio"
-                                name="scout-drop"
-                                [checked]="entry === drop()"
-                                [disabled]="!canDrop(entry)"
-                                (change)="pickDrop(entry.player.playerId)"
-                              />
-                              <ng-container *ngTemplateOutlet="identity; context: { entry }" />
-                            </label>
-                          } @else {
-                            <span class="drop-player">
-                              <ng-container *ngTemplateOutlet="identity; context: { entry }" />
-                            </span>
-                          }
-                        </td>
-                        <ng-container *ngTemplateOutlet="figures; context: { entry }" />
-                      </tr>
-                    }
-                    @if (rosterAll() && rosterReserve().length > 0) {
-                      <tr class="roster-divider">
-                        <td colspan="6">On IR, no spot to free</td>
-                      </tr>
-                      @for (entry of rosterReserve(); track entry.player.playerId) {
-                        <tr>
-                          <td>
-                            <span class="drop-player">
-                              <ng-container *ngTemplateOutlet="identity; context: { entry }" />
-                            </span>
-                          </td>
-                          <ng-container *ngTemplateOutlet="figures; context: { entry }" />
-                        </tr>
-                      }
-                    }
-                  </tbody>
-                </table>
-              </div>
-              @if (rosterFoldable()) {
-                <button type="button" class="roster-more" (click)="toggleRosterAll()">
-                  @if (rosterAll()) {
-                    Show fewer
-                  } @else {
-                    Show all {{ roster().length }}
-                  }
-                </button>
-              }
-            }
-          </div>
-        }
-      </section>
-
-      <ng-template #identity let-entry="entry">
-        <app-team-logo
-          class="drop-logo"
-          [team]="entry.player.teamAbbrev"
-          [alt]="entry.player.teamAbbrev ?? ''"
-        />
-        <span class="drop-identity">
-          <span class="drop-name">{{ entry.player.name }}</span>
-          <app-position-chips [positions]="entry.player.positions" />
-          @if (entry.player.reserve) {
-            <span class="drop-tag drop-tag--out">{{ entry.player.slot ?? 'IR' }}</span>
-          } @else if (entry.player.out) {
-            <span class="drop-tag drop-tag--out">{{ entry.player.injuryStatus ?? 'Out' }}</span>
-          }
-        </span>
-      </ng-template>
-
-      <ng-template #figures let-entry="entry">
-        <td class="num slot roster-col--wide">{{ entry.player.slot ?? '' }}</td>
-        <td class="num drop-score roster-col--wide">{{ formatScore(entry.score) }}</td>
-        @if (compare()) {
-          <td
-            class="num drop-delta roster-col--wide"
-            [class.drop-delta--up]="(entry.delta ?? 0) > 0"
-            [class.drop-delta--down]="(entry.delta ?? 0) < 0"
-          >
-            {{ formatDelta(entry.delta) }}
-          </td>
-        }
-        @if (slotsKnown()) {
-          <td class="num">{{ starts(entry) }}</td>
-          <td class="num drop-score">
-            @if (entry.value && entry.score !== null && !entry.player.reserve) {
-              @if (entry.weighed) {
-                {{ dropCost(entry) }}
-              } @else {
-                <span class="drop-unknown">?</span>
-              }
-            }
-          </td>
-        }
-      </ng-template>
-
-      @if (filtered().length === 0) {
-        <p class="empty">{{ emptyText() }}</p>
-      } @else {
-        <app-scout-table
-          [rows]="visible()"
-          [scoringType]="scoringType()"
-          [categories]="categories()"
-          [view]="view()"
-          [compare]="compare()"
-          [sinceLabel]="sinceLabel()"
-          [iceLabel]="iceLabel()"
-          [showOwner]="pool() === 'all' || pool() === 'taken' || showMine()"
-          [gains]="gains()"
-          [dropName]="dropSurname()"
-          [sort]="sort()"
-          (sortBy)="sortBy($event)"
-        />
-        <div class="list-foot">
-          <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
-          @if (pageCount() > 1) {
-            <nav class="pager" aria-label="Pages of players">
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm pager-button"
-                aria-label="Previous page"
-                appTooltip="Previous page"
-                [disabled]="currentPage() === 0"
-                (click)="goToPage(currentPage() - 1)"
-              >
-                <app-icon name="arrow-left" [size]="16" />
-              </button>
-              <span class="pager-label">Page {{ currentPage() + 1 }} of {{ pageCount() }}</span>
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm pager-button"
-                aria-label="Next page"
-                appTooltip="Next page"
-                [disabled]="currentPage() === pageCount() - 1"
-                (click)="goToPage(currentPage() + 1)"
-              >
-                <app-icon name="arrow-right" [size]="16" />
-              </button>
-            </nav>
-          }
-        </div>
-      }
     }
   </section>
 </div>

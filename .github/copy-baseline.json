@@ -5,15 +5,8 @@
   "src/app/draft-projection/full-season-dialog/full-season-dialog.html :: text block over 120 characters": 1,
   "src/app/home/home.html :: text block over 120 characters": 1,
   "src/app/landing/landing.html :: text block over 120 characters": 6,
-  "src/app/player-scout/player-scout.html :: text block over 120 characters": 2,
-  "src/app/player-scout/player-scout.html :: tooltip over 60 characters": 6,
-  "src/app/player-scout/scout-table/scout-table.html :: tooltip over 60 characters": 7,
+  "src/app/player-scout/player-scout.html :: text block over 120 characters": 1,
   "src/app/premium/premium.html :: text block over 120 characters": 1,
   "src/app/shared/consent-banner/consent-banner.html :: text block over 120 characters": 1,
-  "src/app/shared/environment-banner/environment-banner.html :: —": 1,
-  "src/app/start-bench/start-bench.html :: text block over 120 characters": 1,
-  "src/app/start-bench/start-bench.html :: tooltip over 60 characters": 1,
-  "src/app/streamer-planner/roster-table/roster-table.html :: tooltip over 60 characters": 1,
-  "src/app/streamer-planner/streamer-planner.html :: text block over 120 characters": 1,
-  "src/app/whos-hot/hot-players-table/hot-players-table.html :: tooltip over 60 characters": 1
+  "src/app/shared/environment-banner/environment-banner.html :: —": 1
 }

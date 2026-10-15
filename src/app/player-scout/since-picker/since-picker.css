@@ -1,21 +1,20 @@
-/* Two ways to name the earlier projection: the preseason press, or a day in a field. The field
-   is drawn as a pill too, so the two read as one choice. */
+/* One choice of three, drawn as the page's other segmented controls are: off, the preseason, or
+   a day in a field. The field is a segment too, so the three read as one control. */
 :host {
-  display: block;
+  display: inline-block;
 }
 
 .since {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  overflow: hidden;
 }
 
-.pill {
+.segment {
   align-items: center;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 0;
   color: var(--color-text-muted);
   cursor: pointer;
   display: inline-flex;
@@ -25,26 +24,27 @@
   gap: var(--space-2);
   line-height: 1.2;
   padding: var(--space-1) var(--space-3);
-  transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+  transition: background var(--transition-fast);
 }
 
-.pill:hover:not(.pill--active) {
+.segment + .segment {
+  border-left: 1px solid var(--color-border-control);
+}
+
+.segment:hover:not(.segment--active) {
   background: var(--color-surface-hover);
 }
 
-.pill:focus-visible,
-.pill:has(:focus-visible) {
+.segment:focus-visible,
+.segment:has(:focus-visible) {
   outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 
-.pill--active {
+.segment--active {
   background: var(--color-primary);
-  border-color: var(--color-primary);
   color: var(--color-primary-contrast);
+  font-weight: var(--weight-semibold);
 }
 
 .date-label {
@@ -52,8 +52,8 @@
 }
 
 /* Drawn by us, not the platform, as the planner's date fields are: iOS Safari gives a native
-   date field its own width otherwise. Inside the pill it is a plain figure, so it reads as the
-   pill's label rather than a second control. */
+   date field its own width otherwise. Inside the segment it is a plain figure, so it reads as
+   the segment's label rather than a second control. */
 .field-date {
   appearance: none;
   -webkit-appearance: none;
@@ -77,17 +77,11 @@
   outline: none;
 }
 
-.pill--active .field-date {
+.segment--active .field-date {
   color: var(--color-primary-contrast);
   font-weight: var(--weight-semibold);
 }
 
-.pill--active .field-date::-webkit-calendar-picker-indicator {
+.segment--active .field-date::-webkit-calendar-picker-indicator {
   filter: invert(1);
-}
-
-.since-caption {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  margin: var(--space-2) 0 0;
 }
