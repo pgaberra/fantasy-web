@@ -461,7 +461,7 @@ describe('PlayerScoutComponent', () => {
     );
     const fixture = await render();
 
-    expect(ngMocks.formatText(fixture)).toContain("The season isn't under way");
+    expect(ngMocks.formatText(fixture)).toContain("The season hasn't started yet.");
     expect(ngMocks.findAll(fixture, ScoutTableComponent)).toHaveLength(0);
   });
 

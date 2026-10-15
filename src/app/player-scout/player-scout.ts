@@ -19,7 +19,6 @@ import { PlayerScoutService, ScoutSince, TeamPlayer } from '../services/player-s
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
-import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { Platform } from '../shared/platform-tabs/platform-tabs';
@@ -115,7 +114,6 @@ export interface LeagueTeamOption {
   selector: 'app-player-scout',
   imports: [
     ErrorStateComponent,
-    HelpTipComponent,
     IconComponent,
     LeagueFieldComponent,
     LoadingIndicatorComponent,

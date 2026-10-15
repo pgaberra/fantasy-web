@@ -314,12 +314,6 @@
   padding: var(--space-2) var(--space-3);
 }
 
-.ice-caption {
-  color: var(--color-text-muted);
-  flex: 1 1 100%;
-  font-size: var(--text-xs);
-}
-
 /* What a pickup costs, in one line between the filters and the list: the room the roster has, or
    the player whose going costs the lineup least. The roster itself unfolds under the line, so the
    list stays the first thing on the page. */

@@ -220,8 +220,8 @@
             }
             @if (hasDropRoom()) {
               <span class="range-legend range-legend--drop"
-                ><span class="legend-swatch" aria-hidden="true"></span>Available only if a player at
-                a specific position is dropped</span
+                ><span class="legend-swatch" aria-hidden="true"></span>Open if you drop a
+                player</span
               >
             }
           </p>
@@ -230,9 +230,7 @@
              it has room on. The switch that ranks the free agents by them is on their own card. -->
         @switch (myTeamStatus()) {
           @case ('not-found') {
-            <p class="my-team my-team--note">
-              Your team isn't in this league, so open lineup slots aren't shown.
-            </p>
+            <p class="my-team my-team--note">Your team isn't in this league.</p>
           }
           @case ('error') {
             <p class="my-team my-team--note">
@@ -284,7 +282,6 @@
       <div class="card-head">
         <h2 id="planner-free-agents-title" class="card-title">
           <app-icon name="user-plus" />Top Free Agents
-          <app-help-tip label="How these are ranked" text="Based on our AI projections." />
         </h2>
         <!-- Scored only on the nights the user's lineup has room for them, unless unticked. -->
         @if (myTeamStatus() === 'ready') {
@@ -304,10 +301,6 @@
               <label class="fit-toggle fit-toggle--drops">
                 <input type="checkbox" [checked]="countDrops()" (change)="toggleCountDrops()" />
                 Include games a drop would open
-                <app-help-tip
-                  label="About counting a drop's games"
-                  text="Counts games that could be added by dropping a player from your roster."
-                />
               </label>
             }
           </div>
@@ -398,10 +391,6 @@
       @if ((league() || demo()) && focusOptions().length > 0) {
         <div class="focus" role="group" aria-labelledby="planner-focus-label">
           <span id="planner-focus-label" class="group-label">Rank by</span>
-          <app-help-tip
-            label="Ranking by categories"
-            text="Select the categories to rank players by."
-          />
           <div class="pills">
             <button
               type="button"
@@ -438,10 +427,6 @@
             <div class="league-prompt">
               <app-icon name="link" [size]="48" class="league-prompt-icon" />
               <p class="league-prompt-title">Connect your Yahoo account</p>
-              <p class="league-prompt-text">
-                Free agents are based on the players available in your Yahoo league. Connect your
-                Yahoo account and select a league to get started.
-              </p>
               <button
                 type="button"
                 class="btn btn-secondary"
@@ -458,9 +443,7 @@
             </div>
           }
           @case ('no-leagues') {
-            <p class="prompt">
-              Your Yahoo account has no NHL league this season, so there is no one to show.
-            </p>
+            <p class="prompt">Your Yahoo account has no NHL league this season.</p>
           }
           @case ('enter-espn') {
             <p class="prompt">Enter your ESPN league above to see its available free agents.</p>
@@ -480,9 +463,9 @@
       } @else if (noFreeAgents()) {
         <p class="empty">
           @if (demo()) {
-            No player at or under {{ maxRostered() }}% rostered has a projection for these nights.
+            No player at or under {{ maxRostered() }}% rostered has a projection.
           } @else {
-            No available player in this league has a projection for these nights.
+            No available player has a projection for these nights.
           }
         </p>
       } @else if (filtered().length === 0) {
@@ -557,10 +540,6 @@
       <div class="card-head">
         <h2 id="planner-roster-title" class="card-title">
           <app-icon name="user-minus" />Lowest Contributors
-          <app-help-tip
-            label="How your players are ranked"
-            text="Your players ranked by how much they’re expected to contribute to your team over the selected period."
-          />
         </h2>
       </div>
       @if (demo()) {
@@ -574,9 +553,7 @@
             <p class="prompt">Connect your Yahoo account to see your roster.</p>
           }
           @case ('no-leagues') {
-            <p class="prompt">
-              Your Yahoo account has no NHL league this season, so there is no roster to show.
-            </p>
+            <p class="prompt">Your Yahoo account has no NHL league this season.</p>
           }
           @case ('enter-espn') {
             <p class="prompt">Enter your ESPN league above to see your roster.</p>
@@ -598,7 +575,7 @@
             />
           }
           @case ('not-found') {
-            <p class="empty">Your team isn't in this league, so there is no roster to show.</p>
+            <p class="empty">Your team isn't in this league.</p>
           }
           @case ('ready') {
             @if (loadingFreeAgents()) {
@@ -635,7 +612,7 @@
           <app-icon name="table" />Team Schedules
           <app-help-tip
             label="How teams are ranked"
-            text="Teams are ranked based on off-nights, home vs. road games, and the strength of opposing teams."
+            text="Ranked by off-nights, home games and opponent strength."
           />
         </h2>
       </div>

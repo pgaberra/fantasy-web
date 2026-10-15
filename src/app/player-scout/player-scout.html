@@ -1,22 +1,12 @@
 <div class="player-scout">
   <header class="hero">
     <h1>Player Scout</h1>
-    <p class="lede">
-      Every player in your league on the AI projection for the rest of the season. Compare it with
-      the projection of any earlier day to see whose outlook has moved, and switch to the ice to see
-      who is actually playing more.
-    </p>
+    <p class="lede">Every player in your league, projected for the rest of the season.</p>
   </header>
 
   <section class="card" aria-labelledby="scout-list-title">
     <div class="card-head">
-      <h2 id="scout-list-title" class="card-title">
-        <app-icon name="user-plus" />Players
-        <app-help-tip
-          label="How these are ranked"
-          text="Every player the league holds, scored with your league's settings on the AI projection for the rest of the season. With a comparison on, each figure wears its change since the day you pick (the earlier projection re-spread over the games his club has left, so the two compare stat by stat), and the rank its places gained. The ice view shows what the ice has measured instead: ice a game and share of his club's power play over each club's last few games against his games before. Your own team is weighed night by night over the rest of the season, so the player to drop is the one whose going costs your lineup least."
-        />
-      </h2>
+      <h2 id="scout-list-title" class="card-title"><app-icon name="user-plus" />Players</h2>
       <div class="views" role="group" aria-label="What to show">
         <button
           type="button"
@@ -76,11 +66,7 @@
               }
             </select>
           </label>
-          <label
-            class="tick"
-            [class.tick--moot]="poolShowsMine()"
-            appTooltip="Your own players in the same list, so a pickup reads against the player he would replace"
-          >
+          <label class="tick" [class.tick--moot]="poolShowsMine()">
             <input
               type="checkbox"
               [checked]="showMine() || poolShowsMine()"
@@ -162,7 +148,6 @@
                   class="movers--risers"
                   [class.active]="movers() === 'risers'"
                   [attr.aria-pressed]="movers() === 'risers'"
-                  appTooltip="Only players the projection makes more of than on the chosen day"
                   (click)="movers.set('risers')"
                 >
                   Risers
@@ -172,7 +157,6 @@
                   class="movers--fallers"
                   [class.active]="movers() === 'fallers'"
                   [attr.aria-pressed]="movers() === 'fallers'"
-                  appTooltip="Only players the projection makes less of than on the chosen day"
                   (click)="movers.set('fallers')"
                 >
                   Fallers
@@ -199,7 +183,7 @@
                 [class.active]="iceWindow() === 'since'"
                 [attr.aria-pressed]="iceWindow() === 'since'"
                 [disabled]="!compare() || since() === null"
-                appTooltip="His games since the day the projection is compared with; pick a day under Compare in the projection view"
+                appTooltip="Pick a comparison day in the projection view first"
                 (click)="iceWindowPicked.set('since')"
               >
                 Since the chosen day
@@ -220,10 +204,6 @@
                 </select>
               </label>
             }
-            <span class="ice-caption">
-              Measured ice over {{ iceLabel() }}, against his earlier games this season (or last
-              season while this one is short). Hover a figure for the games it stands on.
-            </span>
           </div>
         }
       </div>
@@ -236,10 +216,7 @@
     } @else if (loading()) {
       <app-loading-indicator />
     } @else if (outOfSeason()) {
-      <p class="empty">
-        The season isn't under way, so there is no rest of it to scout. Come back after opening
-        night.
-      </p>
+      <p class="empty">The season hasn't started yet.</p>
     } @else if (noPlayers()) {
       <p class="empty">No player in this league has a projection.</p>
     } @else {
@@ -287,7 +264,7 @@
                               move.player.injuryStatus
                             }}</span>
                           }
-                          to {{ move.slot }}: his roster spot then takes a pickup, nobody dropped.
+                          to {{ move.slot }} to open a spot.
                         </span>
                       </li>
                     }
@@ -305,7 +282,7 @@
                         @if (low.value && slotsKnown()) {
                           <span
                             class="floor-score"
-                            appTooltip="What your lineup loses over the rest of the season without him, with every night's starters set: less than his own projection where another player would start in his place"
+                            appTooltip="What your lineup loses without him (rest of season)"
                             >costs {{ formatScore(low.value.marginal) }}</span
                           >
                         } @else {
@@ -341,10 +318,6 @@
                 {{ name }},
               }
               the cheapest to drop first.
-              <app-help-tip
-                label="How your players are weighed"
-                text="Each of your players scored the same way as the league's: the AI projection for the rest of the season, by your league's settings. Then your lineup is set for every night left in the season, best players first, so Starts is the nights he actually plays for you and Lineup cost is what you lose without him: a third centre behind two centre seats plays only when one of them is off, whatever he would score on the bench. Players on injured reserve hold no roster spot, so dropping them frees none."
-              />
             </p>
             @if (roster().length === 0) {
               <p class="room-note">None of your {{ shown() }} is on the roster.</p>
@@ -355,35 +328,21 @@
                     <tr>
                       <th scope="col">Player</th>
                       <th scope="col" class="num">Slot</th>
-                      <th
-                        scope="col"
-                        class="num"
-                        appTooltip="The AI projection for the rest of the season, scored by your league's settings"
-                      >
+                      <th scope="col" class="num" appTooltip="Rest-of-season AI projection">
                         Proj.
                       </th>
                       @if (compare()) {
-                        <th
-                          scope="col"
-                          class="num"
-                          appTooltip="The change in his score since the chosen day"
-                        >
-                          Change
-                        </th>
+                        <th scope="col" class="num">Change</th>
                       }
                       @if (slotsKnown()) {
                         <th
                           scope="col"
                           class="num"
-                          appTooltip="Nights he starts in your lineup, of the nights his club plays"
+                          appTooltip="Nights he starts for you, of his club's games"
                         >
                           Starts
                         </th>
-                        <th
-                          scope="col"
-                          class="num"
-                          appTooltip="What your lineup loses over the rest of the season without him"
-                        >
+                        <th scope="col" class="num" appTooltip="What your lineup loses without him">
                           Lineup cost
                         </th>
                       }
@@ -434,7 +393,7 @@
                               } @else {
                                 <span
                                   class="drop-unknown"
-                                  appTooltip="His club's nights are not in the schedule, so his place in the lineup cannot be weighed"
+                                  appTooltip="His club's schedule is missing"
                                   >?</span
                                 >
                               }
