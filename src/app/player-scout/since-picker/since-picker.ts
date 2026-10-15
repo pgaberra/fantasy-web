@@ -40,22 +40,19 @@ export function sinceCaption(answer: ScoutSince | null): string {
   }
   switch (answer.kind) {
     case 'SNAPSHOT': {
-      const nearest =
-        answer.resolved && answer.requested && answer.resolved !== answer.requested
-          ? `, the nearest day kept before ${formatDay(answer.requested)}`
-          : '';
-      return `Today's projection against the one of ${formatDay(answer.resolved)}${nearest}, re-spread over the games left.`;
+      return answer.resolved && answer.requested && answer.resolved !== answer.requested
+        ? `Compared with ${formatDay(answer.resolved)}, the nearest day kept.`
+        : '';
     }
     case 'PRESEASON':
       if (answer.requested) {
-        const begins = answer.earliestSnapshot
-          ? `day-by-day projections are kept from ${formatDay(answer.earliestSnapshot)}`
-          : 'no day-by-day projection is kept yet';
-        return `Nothing is kept from before ${formatDay(answer.requested)} (${begins}), so this is today's projection against the one made before the season, re-spread over the games left.`;
+        return answer.earliestSnapshot
+          ? `Days are kept from ${formatDay(answer.earliestSnapshot)}. Compared with preseason.`
+          : 'No day is kept yet. Compared with preseason.';
       }
-      return `Today's projection against the one made before the season, re-spread over the games left.`;
+      return '';
     case 'NONE':
-      return 'No earlier projection is stored, so there is nothing to compare with yet.';
+      return 'No earlier projection to compare with yet.';
   }
   return '';
 }

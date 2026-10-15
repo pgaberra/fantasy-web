@@ -137,8 +137,8 @@ export class ScoutTableComponent {
 
   readonly rankTip = computed(() =>
     this.comparing()
-      ? 'His place among every player in the league the model projects, whoever holds him, and the places gained or lost since the chosen day'
-      : 'His place among every player in the league the model projects, whoever holds him',
+      ? 'League rank, and places moved since the chosen day'
+      : 'Rank among every player in the league',
   );
 
   readonly scoreHeading = computed(() =>
@@ -190,7 +190,7 @@ export class ScoutTableComponent {
       return '';
     }
     if (row.thenRank === null) {
-      return 'The model had no line for him on the chosen day';
+      return 'No projection on the chosen day';
     }
     return `Ranked ${row.thenRank} of these players on the chosen day, ${row.rank} today`;
   }
@@ -280,9 +280,7 @@ export class ScoutTableComponent {
   iceTip(row: ScoutRow): string {
     const usage = row.usage;
     if (!usage) {
-      return row.line.type === 'goalie'
-        ? 'A goalie has no ice role to measure'
-        : 'No game of his in the recent stretch';
+      return row.line.type === 'goalie' ? 'A goalie has no ice role to measure' : 'No recent games';
     }
     const games = `${usage.recent.games} recent ${usage.recent.games === 1 ? 'game' : 'games'}`;
     if (!usage.baseline) {
@@ -329,14 +327,14 @@ export class ScoutTableComponent {
   listedTip(row: ScoutRow): string {
     const usage = row.usage;
     if (!usage?.listedNow) {
-      return 'The lineup page does not list him';
+      return "Not on Daily Faceoff's lineup page";
     }
     const moved = [usage.lineMove, usage.powerPlayMove]
       .filter((move): move is NonNullable<typeof move> => move !== null)
       .map((move) => `${move.from} to ${move.to}`);
     return moved.length > 0
-      ? `Daily Faceoff lists him ${moved.join(' and ')} since the recent games began`
-      : 'Where Daily Faceoff lists him, unchanged over the recent games';
+      ? `Moved ${moved.join(' and ')} on Daily Faceoff`
+      : 'Unchanged on Daily Faceoff';
   }
 
   // --- The swap ---------------------------------------------------------------------------------
@@ -370,17 +368,17 @@ export class ScoutTableComponent {
   swapTip(row: ScoutRow): string {
     const swap = this.swap(row);
     if (!swap) {
-      return 'Nobody on your team of his kind the model can weigh against him';
+      return 'No player of his position to weigh him against';
     }
     if (swap.kind === 'open') {
-      return 'You have an open roster spot: what his starts would add to your lineup over the rest of the season';
+      return 'What he adds in your open roster spot';
     }
     if (swap.kind === 'reserve') {
-      return `Move ${swap.move.player.name} to ${swap.move.slot} and his roster spot takes this pickup: what the pickup's starts would add`;
+      return `What he adds once ${swap.move.player.name} moves to ${swap.move.slot}`;
     }
     return swap.gain > 0
-      ? `Drop ${swap.drop.name} for him: the swap that leaves your lineup worth the most over the rest of the season, with every night's starters set`
-      : `Not an upgrade: with ${swap.drop.name} dropped for him, the player whose going costs least, your lineup is worth less over the rest of the season`;
+      ? `What your lineup gains by dropping ${swap.drop.name} for him`
+      : `Not an upgrade over ${swap.drop.name}, your cheapest drop`;
   }
 
   // --- The player cell ---------------------------------------------------------------------------

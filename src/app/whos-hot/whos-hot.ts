@@ -39,7 +39,6 @@ import {
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
-import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import {
   BEFORE_FIRST_GAME,
@@ -87,7 +86,6 @@ function isSameSpan(a: GameSpan | undefined, b: GameSpan | undefined): boolean {
     LoadingIndicatorComponent,
     ErrorStateComponent,
     LeagueImportButtonComponent,
-    HelpTipComponent,
     IconComponent,
   ],
   templateUrl: './whos-hot.html',
