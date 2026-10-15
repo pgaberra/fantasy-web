@@ -37,7 +37,7 @@
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);
   justify-content: space-between;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .card-title {
@@ -98,24 +98,20 @@
   color: var(--color-primary-contrast);
 }
 
+/* The league on the title line, inline (label, tabs, league), with the ESPN card under it. */
 .league {
   display: block;
-  max-width: 20rem;
+  flex: 0 1 auto;
 }
 
-/* Whose players first, then which of them, then the view's own control. */
-.controls {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: var(--space-3) 0;
-}
-
-.filters {
+/* Which rows, in one toolbar: whose players, at which positions, from which club, the user's
+   own beside them, and a name. The search sits at the end and takes the room that is left, so
+   the row is full at every width rather than a hole with a box at its far side. */
+.toolbar {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-2) var(--space-5);
 }
 
 .field {
@@ -132,10 +128,11 @@
   font-weight: var(--weight-semibold);
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.field select,
-.search {
+select,
+.search-input {
   background: var(--color-surface);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-md);
@@ -145,8 +142,8 @@
   padding: var(--space-1) var(--space-2);
 }
 
-.field select:focus-visible,
-.search:focus-visible {
+select:focus-visible,
+.search-input:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
@@ -156,8 +153,25 @@
 }
 
 .search {
+  align-items: center;
+  color: var(--color-text-subtle);
+  display: inline-flex;
+  flex: 1 1 11rem;
   margin-left: auto;
-  min-width: 12rem;
+  max-width: 16rem;
+  min-width: 11rem;
+  position: relative;
+}
+
+.search app-icon {
+  left: var(--space-2);
+  pointer-events: none;
+  position: absolute;
+}
+
+.search-input {
+  padding-left: 1.75rem;
+  width: 100%;
 }
 
 /* A tick box, as the planner draws its own. */
@@ -277,47 +291,57 @@
   background: var(--color-danger);
 }
 
-/* The comparison, off by default: a tick, and with it on, the earlier projection to compare with
-   and which way the movers went, set off in a band of their own so the list's figures and the
-   changes under them read as one thing switched on together. */
-.compare {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-}
-
-.compare--on {
-  background: var(--color-surface-alt);
+/* The list as one piece: a band on top with the view and what the view asks for, the table
+   under it. The switch sits with the columns it changes, and its setting with the switch. */
+.list {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  margin-top: var(--space-4);
+  overflow: hidden;
+}
+
+.viewbar {
+  align-items: center;
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
   padding: var(--space-2) var(--space-3);
 }
 
-.tick--compare {
-  font-weight: var(--weight-semibold);
+.viewbar .views {
+  flex: none;
 }
 
-.compare app-since-picker {
-  flex: 1 1 100%;
-}
-
-/* The ice's window: the stretch and, for a stretch of games, how many. */
-.ice-window {
+/* A label and its control: the comparison, which way the movers went, the ice's window. */
+.setting {
   align-items: center;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
 }
 
-.ice-caption {
+/* Which day actually answered, or what the ice is read over: a line of its own under the band's
+   controls, since it is the band's footnote. */
+.caption {
   color: var(--color-text-muted);
   flex: 1 1 100%;
   font-size: var(--text-xs);
+  margin: 0;
+}
+
+.list-state {
+  padding: var(--space-4) var(--space-3);
+}
+
+.list .empty {
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+}
+
+.list .list-foot {
+  padding: 0 var(--space-3) var(--space-3);
 }
 
 /* What a pickup costs, in one line between the filters and the list: the room the roster has, or
@@ -327,7 +351,7 @@
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  margin: 0 0 var(--space-3);
+  margin-top: var(--space-4);
   padding: var(--space-2) var(--space-3);
 }
 
@@ -612,18 +636,48 @@
   }
 
   .league {
-    max-width: none;
+    flex: 1 1 100%;
   }
 
-  .field,
-  .field select,
+  /* The toolbar stacks: the search first and full width, as the quickest way to a player on a
+     phone; the two selects share a line; the positions wrap on a line of their own. */
+  .toolbar {
+    gap: var(--space-2) var(--space-3);
+  }
+
   .search {
+    flex: 1 1 100%;
     margin-left: 0;
+    max-width: none;
+    order: -1;
+  }
+
+  .field {
+    flex: 1 1 calc(50% - var(--space-2));
     min-width: 0;
-    width: 100%;
   }
 
   .field select {
+    flex: 1;
     max-width: none;
+    min-width: 0;
+  }
+
+  .toolbar .pills {
+    flex: 1 1 100%;
+  }
+
+  .viewbar {
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .viewbar .views {
+    display: flex;
+    width: 100%;
+  }
+
+  .viewbar .view {
+    flex: 1;
+    justify-content: center;
   }
 }

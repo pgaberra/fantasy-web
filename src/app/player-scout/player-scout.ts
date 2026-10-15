@@ -46,7 +46,12 @@ import {
   sortScout,
 } from './scout-ranking';
 import { ScoutTableComponent, ScoutView } from './scout-table/scout-table';
-import { formatDay, localToday, SincePickerComponent } from './since-picker/since-picker';
+import {
+  formatDay,
+  localToday,
+  sinceCaption,
+  SincePickerComponent,
+} from './since-picker/since-picker';
 
 /** Players to a page: enough to reach well past a league's bench without a second page. */
 export const SCOUT_PAGE_SIZE = 25;
@@ -198,6 +203,17 @@ export class PlayerScoutComponent {
     this.compare.update((on) => !on);
   }
 
+  /** The preseason (null) or a day picked: the comparison on, against that. */
+  pickSince(day: string | null): void {
+    this.since.set(day);
+    this.compare.set(true);
+  }
+
+  /** Off: today's projection alone. The day is kept, so Off and back lands on the same one. */
+  clearCompare(): void {
+    this.compare.set(false);
+  }
+
   onRecentGames(event: Event): void {
     this.recentGames.set(Number((event.target as HTMLSelectElement).value));
   }
@@ -281,6 +297,14 @@ export class PlayerScoutComponent {
   );
 
   /** What the then-lines are, for the table's heading: "vs 7 Oct", "vs preseason". */
+  /** Which earlier projection actually answered, under the picker; empty until it has. */
+  readonly sinceCaption = computed(() => sinceCaption(this.sinceAnswer()));
+
+  /** Whether the list is on the page: the room for a pickup is only worth a line above one. */
+  readonly listReady = computed(
+    () => !this.failure() && !this.loading() && !this.outOfSeason() && !this.noPlayers(),
+  );
+
   readonly sinceLabel = computed(() => {
     const answer = this.sinceAnswer();
     if (!answer || answer.kind === 'NONE') {
