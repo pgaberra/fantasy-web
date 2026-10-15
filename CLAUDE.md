@@ -443,9 +443,11 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   stands (slot by slot, then bench, then IR) with each player's game, projection and suggested
   slot, and marks **Start** / **Bench** where the suggestion differs; a starter with no game or
   out is never told to sit, since he gives nothing either way. A points league also gets the
-  projected points the moves gain. Nothing is written to the platform. A player the platform still has
-  out, or parked on IR, plays tonight when the model expects him to (`playsTonight`: a skater
-  dressing at 50% or more, a goalie with any share of the crease), tagged "Expected back"; one the
+  projected points the moves gain. Nothing is written to the platform. A player the platform has
+  cleared but still parks on IR plays tonight when the model expects him to (`playsTonight`: a
+  skater dressing at 50% or more, a goalie with any share of the crease), tagged "Expected back";
+  a player the platform still names an injury for (O, IR, DTD, ...) never does, whatever the model
+  says (Alexander, 2026-10-15: activate only on certainty); one the
   suggestion starts from IR is **activated**, and `makeRoom` finds him a roster spot the cheapest
   way: an open spot, an injured player moved into the reserve slot he leaves, else a drop — the
   player the team loses least by over the rest of the season as Player Scout ranks it (`scoreTeam` over
