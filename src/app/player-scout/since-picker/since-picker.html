@@ -1,17 +1,24 @@
 <div class="since" role="group" aria-label="The projection to compare with">
   <button
     type="button"
-    class="pill"
-    [class.pill--active]="since() === null"
-    [attr.aria-pressed]="since() === null"
+    class="segment"
+    [class.segment--active]="!on()"
+    [attr.aria-pressed]="!on()"
+    (click)="pickOff()"
+  >
+    Off
+  </button>
+  <button
+    type="button"
+    class="segment"
+    [class.segment--active]="on() && since() === null"
+    [attr.aria-pressed]="on() && since() === null"
     (click)="pickPreseason()"
   >
     Preseason
   </button>
-  <label class="pill date-field" [class.pill--active]="since() !== null">
-    <span class="date-label">{{
-      since() === null ? 'or the projection of' : 'the projection of'
-    }}</span>
+  <label class="segment date-field" [class.segment--active]="on() && since() !== null">
+    <span class="date-label">a day</span>
     <input
       class="field-date"
       type="date"
@@ -24,6 +31,3 @@
     />
   </label>
 </div>
-@if (caption()) {
-  <p class="since-caption" aria-live="polite">{{ caption() }}</p>
-}
