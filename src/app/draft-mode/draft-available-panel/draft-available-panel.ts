@@ -101,7 +101,7 @@ export class DraftAvailablePanelComponent {
   tierStripTooltip(entry: TierStripEntry): string {
     const group = this.tierService.peerGroup(entry.position, entry.remaining);
     const left = `${entry.remaining} ${group} left in tier ${entry.tier}.`;
-    return entry.needed ? left : `${left} Your roster has no open slot for one.`;
+    return entry.needed ? left : `${left} No open slot for one.`;
   }
 
   statStrip(projection: Projection): { key: ScoringStatKey; value: string }[] {

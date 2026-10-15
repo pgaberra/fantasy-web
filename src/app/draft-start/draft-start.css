@@ -11,9 +11,8 @@
   color: var(--color-primary);
 }
 
-.subtitle {
-  color: var(--color-text-subtle);
-  margin: var(--space-1) 0 var(--space-5);
+.page-header {
+  margin-bottom: var(--space-5);
 }
 
 /* The page's two questions. They carry the weight the group headings used to share equally

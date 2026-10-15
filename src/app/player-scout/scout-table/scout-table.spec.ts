@@ -26,6 +26,7 @@ interface RowOptions {
   readonly delta?: number | null;
   readonly rising?: boolean;
   readonly owner?: ScoutPlayer['owner'];
+  readonly availability?: ScoutPlayer['freeAgent']['availability'];
   readonly usage?: ScoutPlayer['usage'];
 }
 
@@ -43,7 +44,7 @@ function row(playerId: number, name: string, rank: number, options: RowOptions =
       name,
       teamAbbrev: 'SEA',
       positions: ['D'],
-      availability: 'FREE_AGENT',
+      availability: options.availability ?? 'FREE_AGENT',
       clubGames: 70,
       expectedGames: 70,
       projected: new Set(['goals', 'assists']),
@@ -285,13 +286,56 @@ describe('ScoutTableComponent', () => {
       { showOwner: true },
     );
 
-    const tags = ngMocks
-      .findAll(fixture, '.scout-tag--owner')
-      .map((tag) => ngMocks.formatText(tag));
+    const tags = ngMocks.findAll(fixture, '.scout-tag').map((tag) => ngMocks.formatText(tag));
     expect(tags).toEqual(['FA', 'Your team: Slapshots', 'Someone Else']);
+    expect(ngMocks.findAll(fixture, '.scout-tag--free')).toHaveLength(1);
     const mine = ngMocks.findAll(fixture, '.scout-tag--mine');
     expect(mine).toHaveLength(1);
     expect(ngMocks.formatText(mine[0])).toBe('Your team: Slapshots');
+    // Another team's name is plain text, not a chip: context, not a thing to find.
+    const held = ngMocks.findAll(fixture, '.scout-tag--held');
+    expect(held).toHaveLength(1);
+    expect(ngMocks.formatText(held[0])).toBe('Someone Else');
+  });
+
+  it('marks a waivers player as such, with or without the owners shown', () => {
+    const rows = [
+      row(1, 'Brandon Montour', 1),
+      row(2, 'Jake Walman', 2, { availability: 'WAIVERS' }),
+    ];
+
+    const plain = render(rows);
+    expect(ngMocks.findAll(plain, '.scout-tag').map((tag) => ngMocks.formatText(tag))).toEqual([
+      'Waivers',
+    ]);
+
+    const withOwners = render(rows, { showOwner: true });
+    expect(ngMocks.findAll(withOwners, '.scout-tag').map((tag) => ngMocks.formatText(tag))).toEqual(
+      ['FA', 'Waivers'],
+    );
+  });
+
+  it("dims another team's player only on a list with someone to pick up", () => {
+    const taken = { teamName: 'Someone Else', mine: false };
+    const mixed = render(
+      [
+        row(1, 'Brandon Montour', 1),
+        row(2, 'Cale Makar', 2, { owner: { teamName: 'Slapshots', mine: true } }),
+        row(3, 'Nathan MacKinnon', 3, { owner: taken }),
+      ],
+      { showOwner: true },
+    );
+    const dimmed = (fixture: typeof mixed) =>
+      ngMocks
+        .findAll(fixture, 'tr.player-row')
+        .map((tr) => tr.nativeElement.classList.contains('player-row--held'));
+    expect(dimmed(mixed)).toEqual([false, false, true]);
+
+    const takenOnly = render(
+      [row(1, 'Brandon Montour', 1, { owner: taken }), row(2, 'Cale Makar', 2, { owner: taken })],
+      { showOwner: true },
+    );
+    expect(dimmed(takenOnly)).toEqual([false, false]);
   });
 
   it("heads a column for each of the league's categories", () => {

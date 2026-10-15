@@ -4,10 +4,7 @@
       ><app-icon name="arrow-left" [size]="14" />Back to drafts</a
     >
     <h1>Draft Analysis</h1>
-    <p class="analysis-lede">
-      See which picks in your league's draft were good and which were reaches, graded against our AI
-      projection from before the season.
-    </p>
+    <p class="analysis-lede">Every pick in your league's draft, graded by the AI projection.</p>
   </div>
 
   <div class="league-picker">
@@ -85,11 +82,9 @@
     <h2 class="analysis-league">{{ leagueName() }}</h2>
     <p class="analysis-source">
       @if (data.preseason) {
-        Graded against the SlapStat AI projection as it stood before the season, by your league's
-        scoring settings.
+        Graded against the preseason AI projection.
       } @else {
-        Graded against the current SlapStat AI projection, by your league's scoring settings. The
-        projection from before the season isn't stored.
+        Graded against the current AI projection; the preseason one isn't stored.
       }
     </p>
 
@@ -152,13 +147,6 @@
             </tbody>
           </table>
         </div>
-        <p class="analysis-help">
-          Players are ranked by their value over replacement: their projected {{ valueUnit() }} less
-          those of the best player at their position nobody in your league would start. A league
-          that starts four defencemen has to draft them, so they rank where the league needs them.
-          Value added sums each pick's value over replacement less that of the player our projection
-          ranks at that pick number.
-        </p>
       </section>
 
       <section class="analysis-section" aria-labelledby="analysis-picks-heading">
