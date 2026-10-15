@@ -237,8 +237,8 @@ describe('gameLabel', () => {
 });
 
 describe('playsTonight', () => {
-  it('takes the model’s word over a platform that still has a player out', () => {
-    const parked = player('1', ['C'], 'IR+', 'EDM', { out: true, injuryStatus: 'IR' });
+  it('starts a player the platform has cleared but still parks on IR, when the model agrees', () => {
+    const parked = player('1', ['C'], 'IR+', 'EDM', { out: true });
     expect(playsTonight(parked, 0.95)).toBe(true);
     // A game-time call stays the platform’s.
     expect(playsTonight(parked, 0.3)).toBe(false);
@@ -248,6 +248,16 @@ describe('playsTonight', () => {
     expect(playsTonight(goalie, 0.2)).toBe(true);
     expect(playsTonight(goalie, 0)).toBe(false);
     expect(playsTonight(player('3', ['C'], 'BN'), undefined)).toBe(true);
+  });
+
+  it('never overrides a platform that still names an injury, however sure the model is', () => {
+    // Dahlin and Morrissey on 2026-10-15: on IR, confirmed out, and the model had them back.
+    for (const injuryStatus of ['O', 'IR', 'IR-LT', 'DTD', 'OUT', 'INJURY_RESERVE']) {
+      const parked = player('1', ['D'], 'IR', 'BUF', { out: true, injuryStatus });
+      expect(playsTonight(parked, 1)).toBe(false);
+    }
+    const goalie = player('2', ['G'], 'IR', 'EDM', { out: true, injuryStatus: 'O' });
+    expect(playsTonight(goalie, 1)).toBe(false);
   });
 });
 
@@ -273,7 +283,7 @@ describe('starting a player cleared to come off injured reserve', () => {
   const roster = [
     player('1', ['C'], 'C'),
     player('2', ['C'], 'C'),
-    player('3', ['C'], 'IR+', 'EDM', { out: true, injuryStatus: 'IR' }),
+    player('3', ['C'], 'IR+', 'EDM', { out: true }),
     player('4', ['D'], 'BN', 'BOS'),
     player('5', ['D'], 'BN', 'BOS'),
   ];

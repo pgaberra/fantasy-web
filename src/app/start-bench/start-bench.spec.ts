@@ -247,7 +247,7 @@ describe('StartBenchComponent', () => {
       ...base,
       players: base.players.map((player) =>
         player.playerId === '2'
-          ? { ...player, slot: 'IR+', out: true, injuryStatus: 'IR' }
+          ? { ...player, slot: 'IR+', out: true, injuryStatus: undefined }
           : player,
       ),
     };
@@ -257,6 +257,21 @@ describe('StartBenchComponent', () => {
     expect(text).toContain('Activate Centre 2 from injured reserve first.');
     expect(text).toContain('Expected back');
     expect(text).toContain('That takes a roster spot');
+  });
+
+  it('never activates a player the platform still names an injury for, whatever the model says', async () => {
+    const base = team();
+    myTeam = {
+      ...base,
+      players: base.players.map((player) =>
+        player.playerId === '2' ? { ...player, slot: 'IR', out: true, injuryStatus: 'O' } : player,
+      ),
+    };
+    const fixture = await render();
+
+    const text = ngMocks.formatText(fixture);
+    expect(text).not.toContain('Activate');
+    expect(text).not.toContain('Expected back');
   });
 
   it('names a goalie his club has confirmed rather than give a bare chance', async () => {

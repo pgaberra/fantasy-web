@@ -8,9 +8,9 @@ import { TeamPlayer } from '../services/player-scout.service';
 import { labelledSeats, LabelledSeat } from '../streamer-planner/planner-lineup';
 
 /**
- * The chance of dressing at which the model's word that a skater plays tonight outweighs a
- * platform that still has him out: a player cleared after the platform last looked, as Bedard was
- * on 2026-10-13, still parked on IR+. Below it he is a game-time call, and the platform stands.
+ * The chance of dressing from which a skater the platform has cleared, but who still sits parked
+ * on injured reserve, plays tonight: Bedard on 2026-10-13, back but still on IR+. Below it he is a
+ * game-time call, and the platform's slot stands.
  */
 export const DRESSES_TONIGHT = 0.5;
 
@@ -46,8 +46,8 @@ export interface StartBenchRow {
    */
   readonly activate: boolean;
   /**
-   * The platform has him out, but the model expects him to play tonight: the two disagree, and the
-   * row says so rather than pick one silently.
+   * The platform has cleared him but still parks him on injured reserve, and the model expects him
+   * to play tonight: the row says why he is started from there.
    */
   readonly clearedByModel: boolean;
 }
@@ -72,9 +72,16 @@ export interface StartBenchDay {
 }
 
 /**
- * Whether a player can play tonight: not out on the platform, or out there while the model expects
- * him to play. A skater counts from {@link DRESSES_TONIGHT}; a goalie's chance is his share of the
- * crease, nought while he is out, so any share at all says he is back.
+ * Whether a player can play tonight: not out on the platform, or only parked there, on injured
+ * reserve with his injury cleared, while the model expects him to play. A skater counts from
+ * {@link DRESSES_TONIGHT}; a goalie's chance is his share of the crease, nought while he is out, so
+ * any share at all says he is back.
+ *
+ * **A player the platform still names an injury for never plays**, whatever the model says
+ * (Alexander, 2026-10-15): Dahlin and Morrissey, both confirmed out that night and shown so, were
+ * suggested for activation because the model's injury read had them back. Telling a manager to
+ * activate a player needs certainty, and only the platform clearing him gives it; the model may
+ * only agree. Both platforms report a healthy player as no status at all.
  */
 export function playsTonight(
   player: PlannerRosterPlayer,
@@ -83,7 +90,7 @@ export function playsTonight(
   if (!player.out) {
     return true;
   }
-  if (expectedGames === undefined) {
+  if (player.injuryStatus || expectedGames === undefined) {
     return false;
   }
   return player.type === 'goalie' ? expectedGames > 0 : expectedGames >= DRESSES_TONIGHT;
