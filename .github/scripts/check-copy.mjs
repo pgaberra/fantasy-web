@@ -103,13 +103,68 @@ function copyIn(html) {
   return `${visible} ${attrs}`.replace(/&mdash;/g, '—');
 }
 
+/** Every tooltip a template sets: the static attribute, and each string literal in a bound one. */
+function tooltipsIn(html) {
+  return [
+    ...[...html.matchAll(/(?<![\w-])appTooltip="([^"]*)"/g)].map((match) => match[1]),
+    ...[...html.matchAll(/\[appTooltip\]="([^"]*)"/g)].flatMap((match) =>
+      [...match[1].matchAll(/'([^']*)'/g)].map((literal) => literal[1]),
+    ),
+  ];
+}
+
+/** Each run of visible text between two tags or control-flow braces, as a reader sees it. */
+function textBlocksIn(html) {
+  return (
+    html
+      .replace(/<svg\b[\s\S]*?<\/svg>/g, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      // An interpolation renders as some value; count it as one word rather than its source.
+      .replace(/\{\{[\s\S]*?\}\}/g, 'value')
+      .replace(/&#?\w+;/g, 'x')
+      .replace(
+        /@(?:if|else if|else|for|switch|case|default|empty|defer|placeholder|loading)\b[^{]*\{/g,
+        '<',
+      )
+      .replace(/\}/g, '<')
+      .split(/<[^>]*>|</)
+  );
+}
+
+// Legal text is written to be complete, not short; the length caps would only split its sentences.
+const LEGAL = ['src/app/privacy/', 'src/app/terms/'];
+
+const squash = (text) => text.replace(/\s+/g, ' ').trim();
+
+// A cell reads "tooltip" or "text block" and its cap "60 characters".
+const measured = { tooltip: tooltipsIn, 'text block': textBlocksIn };
+for (const [where, most, instead] of table(markdown, 'Length')) {
+  const max = Number(most.match(/\d+/)?.[0]);
+  const strings = measured[where];
+  if (!strings || !max)
+    throw new Error(`COPY-RULES.md Length row "${where}" is not one the check knows`);
+  rules.push({
+    term: `${where} over ${max} characters`,
+    instead,
+    why: 'too long',
+    count: (html) => strings(html).filter((s) => squash(s).length > max).length,
+  });
+}
+
 const ESCAPE = /[.*+?^${}()|[\]\\]/g;
 
 const found = {};
 for (const path of templates(SCAN)) {
   const file = relative(ROOT, path).split(sep).join('/');
-  const haystack = copyIn(readFileSync(path, 'utf8'));
-  for (const { term, exact, anywhere } of rules) {
+  const html = readFileSync(path, 'utf8');
+  const haystack = copyIn(html);
+  for (const { term, exact, anywhere, count: measure } of rules) {
+    if (measure) {
+      if (LEGAL.some((dir) => file.startsWith(dir))) continue;
+      const count = measure(html);
+      if (count) found[`${file} :: ${term}`] = count;
+      continue;
+    }
     const escaped = term.replace(ESCAPE, String.raw`\$&`);
     // Whole phrases only, so "starts" never fires inside "restarts". Punctuation is the exception.
     const source = anywhere ? escaped : String.raw`(?<![\w-])` + escaped + String.raw`(?![\w-])`;
