@@ -80,8 +80,7 @@
           @case ('signed-out') {
             <a routerLink="/login" class="btn btn-primary btn-lg btn-block">Sign in to subscribe</a>
             <p class="plan-note">
-              New here? <a routerLink="/register">Create a free account</a> first, then come back to
-              subscribe.
+              New here? <a routerLink="/register">Create a free account</a> first.
             </p>
           }
           @case ('premium') {
@@ -90,14 +89,13 @@
               @if (entitlement.cancelAtPeriodEnd()) {
                 @if (entitlement.currentPeriodEnd()) {
                   <p class="plan-state plan-state--ending">
-                    Cancelled. Premium remains active until
-                    {{ entitlement.currentPeriodEnd() | date: 'longDate' }}. No further charges will
-                    be made.
+                    Cancelled. Premium stays active until
+                    {{ entitlement.currentPeriodEnd() | date: 'longDate' }}, with no further charges.
                   </p>
                 } @else {
                   <p class="plan-state plan-state--ending">
-                    Cancelled. Premium remains active until the end of the period you paid for. No
-                    further charges will be made.
+                    Cancelled. Premium stays active until your paid period ends, with no further
+                    charges.
                   </p>
                 }
               } @else if (entitlement.currentPeriodEnd()) {
@@ -119,8 +117,7 @@
               }
             </button>
             <p class="plan-note">
-              Change your card, download receipts, or cancel in the billing portal. Payments show as
-              LINK.COM on your statement.
+              Change your card, get receipts or cancel. Charges show as LINK.COM.
             </p>
           }
           @case ('granted') {
@@ -128,13 +125,12 @@
               <p class="plan-status"><span class="status status-ok">Premium active</span></p>
               @if (entitlement.premiumUntil()) {
                 <p class="plan-state">
-                  Premium was given to you, free, until
-                  {{ entitlement.premiumUntil() | date: 'longDate' }}. There is nothing to pay and
-                  nothing to cancel.
+                  Given to you free until {{ entitlement.premiumUntil() | date: 'longDate' }}.
+                  Nothing to pay or cancel.
                 </p>
               } @else {
                 <p class="plan-state">
-                  Premium was given to you, free. There is nothing to pay and nothing to cancel.
+                  Given to you free. Nothing to pay or cancel.
                 </p>
               }
             </div>
@@ -143,8 +139,7 @@
             <div class="plan-lead">
               <p class="plan-status"><span class="status status-pending">Confirming</span></p>
               <p class="plan-state">
-                Your payment went through. We are waiting for confirmation, which usually takes a
-                few seconds.
+                Your payment went through. Confirmation usually takes a few seconds.
               </p>
             </div>
           }
@@ -152,8 +147,8 @@
             <div class="plan-lead">
               <p class="plan-status"><span class="status status-pending">Confirming</span></p>
               <p class="plan-state">
-                Your payment went through, but we haven't received confirmation yet. It should
-                arrive automatically. If the page still looks wrong after a few minutes, email
+                Your payment went through, but confirmation hasn't arrived yet. If this still shows
+                in a few minutes, email
                 <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>.
               </p>
             </div>

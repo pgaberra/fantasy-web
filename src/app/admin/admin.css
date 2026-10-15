@@ -14,11 +14,6 @@
   color: var(--color-text);
 }
 
-.admin-sub {
-  margin: 0;
-  color: var(--color-text-muted);
-}
-
 .admin-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);

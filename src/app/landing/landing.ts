@@ -132,13 +132,13 @@ export class LandingComponent {
       icon: 'import',
       title: `Import your ${this.platforms} league`,
       description:
-        'Pull in your scoring settings, roster spots and league size in one step, or set them by hand. Points and category leagues alike.',
+        'Pull in scoring settings, roster spots and league size in one step, or set them by hand.',
     },
     {
       icon: 'clipboard-list',
       title: 'Draft Mode',
       description:
-        'Take your projection to the draft as a live board. Follow a Yahoo draft pick by pick, or log the picks yourself, and see how the teams stack up as it unfolds.',
+        'Your projection as a live draft board. Follow a Yahoo draft pick by pick, or log the picks yourself.',
     },
     {
       icon: 'share',

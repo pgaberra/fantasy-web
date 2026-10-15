@@ -13,7 +13,6 @@
         <h1>{{ welcomeBack() }}</h1>
       } @else {
         <h1>Welcome to SlapStat</h1>
-        <p class="subtitle">Everything you need for draft day. Start wherever you like.</p>
       }
     </div>
 
@@ -43,12 +42,8 @@
         <span class="feature-icon"><app-icon name="table" [size]="20" /></span>
         <h2 id="projections-heading">Projections</h2>
         <p>
-          Rank every player to your league's scoring settings.
-          @if (espnLeaguesEnabled) {
-            Set the league settings manually, or import them directly from Yahoo or ESPN.
-          } @else {
-            Set the league settings manually, or import them directly from Yahoo.
-          }
+          Rank every player to your league's scoring settings, set by hand or imported from
+          {{ espnLeaguesEnabled ? 'Yahoo or ESPN' : 'Yahoo' }}.
         </p>
         <div class="feature-actions">
           <a class="btn btn-primary" routerLink="/projections/new">
@@ -67,8 +62,7 @@
         <span class="feature-icon"><app-icon name="clipboard-list" [size]="20" /></span>
         <h2 id="draft-heading">Draft Mode</h2>
         <p>
-          Enter our Draft Mode with a projection of your own or a preset. Track every pick in real
-          time. See how the teams in your league stack up against each other after the draft.
+          Draft with your own projection or a preset, and see how the teams stack up afterwards.
         </p>
         <div class="feature-actions">
           <a class="btn btn-secondary" routerLink="/draft">Open Draft Mode</a>
@@ -80,18 +74,12 @@
           <span class="feature-icon"><app-icon name="sparkles" [size]="20" /></span>
           <h2 id="ai-heading">AI Projection</h2>
           @if (aiProjectionLocked()) {
-            <p>
-              Every player projected for the 2026-27 season. Check it out in our projection editor
-              or take them to draft day.
-            </p>
+            <p>Every player projected for the 2026-27 season.</p>
             <div class="feature-actions">
               <a class="btn btn-gold" routerLink="/premium">See Premium</a>
             </div>
           } @else {
-            <p>
-              Every player projected for the 2026-27 season. Check it out in our projection editor
-              or take them to draft day.
-            </p>
+            <p>Every player projected for the 2026-27 season.</p>
             <div class="feature-actions">
               <a
                 class="btn btn-gold"
@@ -112,7 +100,7 @@
         <section class="panel feature" aria-labelledby="hot-heading">
           <span class="feature-icon"><app-icon name="chart-bar" [size]="20" /></span>
           <h2 id="hot-heading">Who's Hot</h2>
-          <p>See which players have performed the best over a selected time period.</p>
+          <p>The top performers over a range of games.</p>
           <div class="feature-actions">
             <a class="btn btn-secondary" routerLink="/whos-hot">Open Who's Hot</a>
           </div>
