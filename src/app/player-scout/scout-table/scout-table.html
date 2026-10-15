@@ -42,7 +42,7 @@
           <button
             type="button"
             class="sort"
-            appTooltip="The AI projection for the rest of the season, scored by your league's settings"
+            appTooltip="Rest-of-season AI projection"
             (click)="sortBy.emit('score')"
           >
             @if (sort().key === 'score') {
@@ -55,7 +55,6 @@
               type="button"
               class="sort sort--delta"
               [class.sort--on]="sort().key === 'delta'"
-              appTooltip="Sort by how much the projection has moved since the chosen day"
               (click)="sortBy.emit('delta')"
             >
               @if (sort().key === 'delta') {
@@ -70,7 +69,7 @@
             <button
               type="button"
               class="sort"
-              appTooltip="Games he is expected to play in the rest of the season"
+              appTooltip="Projected games left"
               (click)="sortBy.emit('games')"
             >
               @if (sort().key === 'games') {
@@ -84,7 +83,7 @@
               <button
                 type="button"
                 class="sort"
-                appTooltip="Projected ice time a game for the rest of the season"
+                appTooltip="Projected ice time per game"
                 (click)="sortBy.emit('toi')"
               >
                 @if (sort().key === 'toi') {
@@ -113,7 +112,7 @@
             <th
               scope="col"
               class="swap-col stat-col--start"
-              appTooltip="The player on your team to drop for him, and what your lineup gains over the rest of the season"
+              appTooltip="Best drop for him, and what your lineup gains"
             >
               Swap
             </th>
@@ -122,35 +121,24 @@
           <th
             scope="col"
             class="num stat-col--start"
-            appTooltip="Games he dressed for in the recent stretch: what the ice figures stand on"
+            appTooltip="Games he played in the recent stretch"
           >
             Games
           </th>
           <th scope="col" class="num ice-col" [attr.aria-sort]="ariaSort('ice')">
-            <button
-              type="button"
-              class="sort"
-              appTooltip="Ice time a game over the recent games, measured, and the change from his games before"
-              (click)="sortBy.emit('ice')"
-            >
+            <button type="button" class="sort" (click)="sortBy.emit('ice')">
               @if (sort().key === 'ice') {
                 <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
               }
               Ice / game
             </button>
           </th>
-          <th
-            scope="col"
-            class="num"
-            appTooltip="Power-play ice a game over the recent games, measured, and the change from before"
-          >
-            PP / game
-          </th>
+          <th scope="col" class="num">PP / game</th>
           <th scope="col" class="num" [attr.aria-sort]="ariaSort('powerPlay')">
             <button
               type="button"
               class="sort"
-              appTooltip="His share of his club's power-play time over the recent games, measured, and the change from before"
+              appTooltip="His share of his club's power-play time"
               (click)="sortBy.emit('powerPlay')"
             >
               @if (sort().key === 'powerPlay') {
@@ -159,11 +147,7 @@
               PP share
             </button>
           </th>
-          <th
-            scope="col"
-            class="lineup-col"
-            appTooltip="Where Daily Faceoff's lineup page lists him now, and where it listed him before the recent games"
-          >
+          <th scope="col" class="lineup-col" appTooltip="His Daily Faceoff line, now and before">
             Lineup
           </th>
         }
@@ -222,11 +206,7 @@
                   @if (comparing() && entry.row.rising) {
                     <span class="scout-tag scout-tag--rising">Rising</span>
                   } @else if (comparing() && entry.row.then === null) {
-                    <span
-                      class="scout-tag"
-                      appTooltip="The model had no line for him on the chosen day"
-                      >New</span
-                    >
+                    <span class="scout-tag" appTooltip="No projection on the chosen day">New</span>
                   }
                 </span>
               </span>

@@ -29,7 +29,7 @@
           <button
             type="button"
             class="sort"
-            appTooltip="Games he would start in your lineup, with your best lineup set each night"
+            appTooltip="Games he starts in your best lineup"
             (click)="sortBy.emit('games')"
           >
             @if (sort().key === 'games') {
@@ -42,7 +42,7 @@
           <button
             type="button"
             class="sort"
-            appTooltip="Projected games on the selected game days, started or not"
+            appTooltip="Projected games, started or not"
             (click)="sortBy.emit('clubGames')"
           >
             @if (sort().key === 'clubGames') {

@@ -11,7 +11,6 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { RestOfSeasonService } from '../services/rest-of-season.service';
 import { LeagueProjectionTableComponent } from '../draft-mode/league-projection-table/league-projection-table';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
-import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
@@ -78,7 +77,6 @@ import { RANK_BY_KINDS, RankBy, RankByKind, boardIdOf, rankByBoard } from './ran
     RouterLink,
     LeagueProjectionTableComponent,
     ErrorStateComponent,
-    HelpTipComponent,
     IconComponent,
     LoadingIndicatorComponent,
     NoticeComponent,

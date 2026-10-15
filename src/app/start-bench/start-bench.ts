@@ -22,7 +22,6 @@ import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.ser
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
-import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { Platform } from '../shared/platform-tabs/platform-tabs';
@@ -75,7 +74,6 @@ export const START_BENCH_DAYS_AHEAD = 30;
   selector: 'app-start-bench',
   imports: [
     ErrorStateComponent,
-    HelpTipComponent,
     IconComponent,
     LeagueFieldComponent,
     LoadingIndicatorComponent,
@@ -390,12 +388,10 @@ export class StartBenchComponent {
       parts.push(`Move ${this.joinNames(room.toReserve.map((p) => p.name))} to IR to make room.`);
     }
     if (room.drops.length > 0) {
-      parts.push(
-        `Drop ${this.joinNames(room.drops.map((row) => row.player.name))} to make room: of the players not starting tonight, the one your team loses least by over the rest of the season.`,
-      );
+      parts.push(`Drop ${this.joinNames(room.drops.map((row) => row.player.name))} to make room.`);
     }
     if (room.short > 0) {
-      parts.push('No other player can go without costing you tonight: pick who to drop yourself.');
+      parts.push('Every other drop costs you tonight: pick one yourself.');
     }
     return parts.join(' ');
   });

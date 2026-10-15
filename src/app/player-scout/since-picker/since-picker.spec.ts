@@ -26,15 +26,13 @@ describe('sinceCaption', () => {
     earliestSnapshot: '2026-10-01',
   };
 
-  it("says which day's projection answered", () => {
-    expect(sinceCaption(kept)).toBe(
-      "Today's projection against the one of 7 Oct, re-spread over the games left.",
-    );
+  it('says nothing when the day asked for answered, since the picker already shows it', () => {
+    expect(sinceCaption(kept)).toEqual('');
   });
 
   it('says when a nearer day answered than the one asked for', () => {
-    expect(sinceCaption({ ...kept, resolved: '2026-10-05' })).toContain(
-      'the one of 5 Oct, the nearest day kept before 7 Oct',
+    expect(sinceCaption({ ...kept, resolved: '2026-10-05' })).toEqual(
+      'Compared with 5 Oct, the nearest day kept.',
     );
   });
 
@@ -45,25 +43,21 @@ describe('sinceCaption', () => {
       earliestSnapshot: '2026-10-15',
     });
 
-    expect(caption).toContain('Nothing is kept from before 7 Oct');
-    expect(caption).toContain('day-by-day projections are kept from 15 Oct');
-    expect(caption).toContain('the one made before the season');
+    expect(caption).toEqual('Days are kept from 15 Oct. Compared with preseason.');
   });
 
   it('says so when no day-by-day projection is kept at all', () => {
-    expect(sinceCaption({ requested: '2026-10-07', kind: 'PRESEASON' })).toContain(
-      'no day-by-day projection is kept yet',
+    expect(sinceCaption({ requested: '2026-10-07', kind: 'PRESEASON' })).toEqual(
+      'No day is kept yet. Compared with preseason.',
     );
   });
 
-  it('names the preseason plainly when it was asked for', () => {
-    expect(sinceCaption({ kind: 'PRESEASON' })).toBe(
-      "Today's projection against the one made before the season, re-spread over the games left.",
-    );
+  it('says nothing when the preseason was asked for, since the picker already shows it', () => {
+    expect(sinceCaption({ kind: 'PRESEASON' })).toEqual('');
   });
 
   it('says when there is nothing to compare with, and nothing until the answer lands', () => {
-    expect(sinceCaption({ kind: 'NONE' })).toContain('nothing to compare with');
+    expect(sinceCaption({ kind: 'NONE' })).toEqual('No earlier projection to compare with yet.');
     expect(sinceCaption(null)).toBe('');
   });
 });
