@@ -122,13 +122,6 @@
   color: var(--color-primary);
 }
 
-.analysis-help {
-  margin: var(--space-2) 0 0;
-  max-width: 70ch;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 /* Positioned, so the hidden column heading stays inside the scroll box rather than widening the
    page on a phone. */
 .table-wrapper {

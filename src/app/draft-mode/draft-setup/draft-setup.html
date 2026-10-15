@@ -47,10 +47,6 @@
           />
           <span class="sync-text">
             <span class="sync-title" aria-hidden="true">Autosync draft picks</span>
-            <app-help-tip
-              label="What autosync does"
-              text="Automatically update this page with picks from your draft."
-            />
           </span>
         </div>
         @if (syncChecking()) {
@@ -183,9 +179,7 @@
       </app-notice>
     }
     @if (teamsMissing()) {
-      <p id="draft-teams-error" class="field-error">
-        Choose the number of teams in your league to start the draft.
-      </p>
+      <p id="draft-teams-error" class="field-error">Choose the number of teams.</p>
     }
 
     <!-- Every team by name, in its draft order, drawn once the size is chosen. The user's seat is
@@ -198,7 +192,7 @@
           <span id="draft-order-label">Draft order</span>
           <app-help-tip
             label="How to set the draft order"
-            text="Press You at your draft position. Drag a team by its handle, or focus the handle and use the arrow keys."
+            text="Press You at your draft position; drag teams to reorder."
           />
         </span>
         <!-- The error takes the hint's place, over the list and beside the first button, which

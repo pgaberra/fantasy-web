@@ -68,17 +68,16 @@ export class LeagueProjectionTableComponent {
    */
   readonly expandable = input<boolean>(true);
 
-  readonly injuredReserveTooltip = 'Player is currently on IR.';
-  readonly notActiveTooltip =
-    "Not active: holds no roster spot, and counts only if he is among the team's best";
-  readonly notCountedTooltip = "Player not included in the team's total.";
+  readonly injuredReserveTooltip = 'On IR';
+  readonly notActiveTooltip = "Not active: counts only if he's among the team's best";
+  readonly notCountedTooltip = "Not in the team's total";
   /**
    * One tip for both bases, beside the switch rather than on its buttons: a tap on a button
    * switches the basis, so on a phone a per-button tooltip could never be read.
    */
   readonly pointsBasisHelp = [
-    'Team share: Only count games where a player fits in your starting lineup.',
-    'All games: Count all games for each player.',
+    'Team share: only games where he fits in your lineup.',
+    'All games: every game he plays.',
   ];
 
   readonly mode = signal<BreakdownMode>('category');
