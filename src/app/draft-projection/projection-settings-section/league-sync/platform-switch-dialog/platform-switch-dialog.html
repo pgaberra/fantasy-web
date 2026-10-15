@@ -23,9 +23,8 @@
       </button>
     </div>
     <p id="platform-switch-body" class="dialog-body">
-      You already have a league synced: <strong>{{ leagueName() }}</strong> on
-      {{ linkedPlatform() }}. Switching to {{ targetPlatform() }} disconnects it. The settings stay
-      as they are until a new league is synced.
+      Switching to {{ targetPlatform() }} disconnects <strong>{{ leagueName() }}</strong> on
+      {{ linkedPlatform() }}. Its settings stay until you sync a new league.
     </p>
     <div class="dialog-actions">
       <button #cancel type="button" class="btn btn-secondary btn-sm" (click)="cancelled.emit()">

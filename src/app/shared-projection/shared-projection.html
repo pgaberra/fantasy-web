@@ -6,9 +6,6 @@
   <div class="shared-projection">
     <div class="gone-card">
       <h1 class="gone-title">This link isn't active</h1>
-      <p class="gone-body">
-        This share link is no longer available. You can still create your own projection.
-      </p>
       <a routerLink="/" class="btn btn-primary">Make your own projection</a>
     </div>
   </div>
@@ -261,8 +258,7 @@
          above the table, where they do not have to scroll a board to find them. -->
     @if (!isLoggedIn()) {
       <section class="cta">
-        <h2 class="cta-title">Sign in or create a free account to make your own projections.</h2>
-        <p class="cta-body">Build your own rankings based on your league settings.</p>
+        <h2 class="cta-title">Make a projection for your own league</h2>
         <div class="cta-actions">
           <a
             routerLink="/login"

@@ -147,14 +147,11 @@ export class ProjectionsTableHeaderComponent {
    */
   utilityTooltip(statKey: UtilityStatKey): string {
     const name = STAT_FULL_NAMES[statKey];
-    if (this.scaleSettings()) {
-      return `${name}. A utility stat used to scale or project other stats.`;
-    }
     const scope = this.gamesPlayedScope();
-    if (scope && statKey === 'gp') {
-      return `${name}, games within ${scope}. A utility stat used only for scaling or projection.`;
+    if (!this.scaleSettings() && scope && statKey === 'gp') {
+      return `${name}, games within ${scope}`;
     }
-    return `${name}. A utility stat used only for scaling or projection.`;
+    return name;
   }
 
   /** Which column's "stats to scale" list is expanded; only one menu is open at a time. */

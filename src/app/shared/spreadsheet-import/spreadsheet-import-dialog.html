@@ -13,10 +13,6 @@
     </div>
 
     @if (step() === 'source') {
-      <p class="dialog-body">
-        Your spreadsheet becomes an import you can start a projection or a draft from.
-      </p>
-
       <div class="source-option">
         <input
           #spreadsheetFile
@@ -195,9 +191,7 @@
               {{ notFound().length }} not found
             </button>
             @if (showUnmatched()) {
-              <p class="source-hint">
-                No current player has these names, so their rows are skipped.
-              </p>
+              <p class="source-hint">These rows are skipped.</p>
               <ul class="unmatched-list">
                 @for (name of notFound(); track $index) {
                   <li>{{ name }}</li>

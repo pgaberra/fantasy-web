@@ -1325,11 +1325,9 @@ describe('SharedProjectionComponent', () => {
 
       expect(fixture.point.componentInstance.matchingCount()).toEqual(2);
       expect(fixture.nativeElement.querySelector('.cta-title').textContent).toContain(
-        'Sign in or create a free account to make your own projections.',
+        'Make a projection for your own league',
       );
-      expect(fixture.nativeElement.querySelector('.cta-body').textContent).toContain(
-        'Build your own rankings based on your league settings.',
-      );
+      expect(fixture.nativeElement.querySelector('.cta-body')).toBeNull();
     });
 
     it('sends them back to this board once they have signed in or signed up', async () => {
