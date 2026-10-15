@@ -11,9 +11,7 @@
 
   <article class="admin-card">
     <h2>Yahoo service account</h2>
-    <p class="admin-card-desc">
-      Fetches player data. Stays connected until Yahoo revokes access.
-    </p>
+    <p class="admin-card-desc">Fetches player data. Stays connected until Yahoo revokes access.</p>
 
     <div class="admin-status">
       @switch (connected()) {
@@ -58,9 +56,7 @@
 
   <article class="admin-card">
     <h2>Player data sync</h2>
-    <p class="admin-card-desc">
-      Rebuilds the player list from Yahoo. Also runs once a day.
-    </p>
+    <p class="admin-card-desc">Rebuilds the player list from Yahoo. Also runs once a day.</p>
 
     @if (syncMessage()) {
       <p class="admin-success" role="status">{{ syncMessage() }}</p>
@@ -204,9 +200,7 @@
         Can we list our leagues?
       </button>
     </div>
-    <p class="probe-hint">
-      If Yahoo refuses this, other Fantasy API endpoints likely fail too.
-    </p>
+    <p class="probe-hint">If Yahoo refuses this, other Fantasy API endpoints likely fail too.</p>
 
     @if (leagues().length) {
       <div class="probe-leagues">

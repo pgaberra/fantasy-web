@@ -90,7 +90,8 @@
                 @if (entitlement.currentPeriodEnd()) {
                   <p class="plan-state plan-state--ending">
                     Cancelled. Premium stays active until
-                    {{ entitlement.currentPeriodEnd() | date: 'longDate' }}, with no further charges.
+                    {{ entitlement.currentPeriodEnd() | date: 'longDate' }}, with no further
+                    charges.
                   </p>
                 } @else {
                   <p class="plan-state plan-state--ending">
@@ -129,9 +130,7 @@
                   Nothing to pay or cancel.
                 </p>
               } @else {
-                <p class="plan-state">
-                  Given to you free. Nothing to pay or cancel.
-                </p>
+                <p class="plan-state">Given to you free. Nothing to pay or cancel.</p>
               }
             </div>
           }
