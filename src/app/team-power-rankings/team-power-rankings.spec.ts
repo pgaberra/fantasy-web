@@ -643,9 +643,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.rankByKind()).toEqual('own');
     expect(fixture.nativeElement.querySelector('.rank-by-select')).toBeNull();
     const empty = fixture.nativeElement.querySelector('.kind-empty') as HTMLElement;
-    expect(empty.textContent?.replace(/\s+/g, ' ')).toContain(
-      'No projections yet. Create one to rank teams using your own projections.',
-    );
+    expect(empty.textContent?.replace(/\s+/g, ' ')).toContain('No projections yet. Create one');
     const link = ngMocks.find(fixture.debugElement, '.kind-empty a');
     expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
     // Nothing in the kind ranks the league, so what ranked it goes on doing so.

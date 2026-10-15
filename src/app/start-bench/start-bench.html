@@ -1,10 +1,7 @@
 <div class="start-bench">
   <header class="hero">
     <h1>Start/Bench</h1>
-    <p class="lede">
-      Your lineup for the day's games, and who the AI projection would start when more of your
-      players have a game than your lineup has spots.
-    </p>
+    <p class="lede">Who to start on a given day, by the AI projection.</p>
   </header>
 
   <section class="card" aria-labelledby="lineup-title">
@@ -14,10 +11,6 @@
         @if (teamName(); as name) {
           <span class="team-name">{{ name }}</span>
         }
-        <app-help-tip
-          label="How the suggestion is set"
-          text="Each player's AI projection for this day's game alone, scored with your league's settings. The players whose club plays get a spot best first, each moved to whichever spot leaves room for the others, so the ones left over are the ones to bench. A goalie counts as much as his chance to start. Nothing is changed in your league: set the lineup there."
-        />
       </h2>
     </div>
 
@@ -70,7 +63,7 @@
     } @else if (loading()) {
       <app-loading-indicator />
     } @else if (notFound()) {
-      <p class="empty">You have no team in this league, so there is no lineup to set.</p>
+      <p class="empty">You have no team in this league.</p>
     } @else if (emptyRoster()) {
       <p class="empty">Your team has no players yet.</p>
     } @else if (day(); as day) {
@@ -156,7 +149,7 @@
                         @if (row.clearedByModel) {
                           <span
                             class="tag tag--cleared"
-                            appTooltip="His injury is cleared but he is still on injured reserve, and the AI projection expects him to play tonight."
+                            appTooltip="Cleared but still on IR; projected to play tonight"
                             >Expected back</span
                           >
                         }

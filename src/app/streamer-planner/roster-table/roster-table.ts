@@ -101,8 +101,8 @@ export class RosterTableComponent {
 
   readonly scoreTip = computed(() =>
     this.scoringType() === 'points'
-      ? 'Projected points over the games he starts in your lineup, and per start under it'
-      : 'Z-Score over the games he starts in your lineup, and per start under it',
+      ? 'Points over his starts, and per start under it'
+      : 'Z-Score over his starts, and per start under it',
   );
 
   ariaSort(key: RosterSortKey): 'ascending' | 'descending' | null {

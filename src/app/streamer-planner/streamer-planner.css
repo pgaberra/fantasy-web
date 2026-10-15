@@ -545,12 +545,6 @@
   color: var(--color-text);
 }
 
-.league-prompt-text {
-  margin: 0;
-  font-size: var(--text-sm);
-  max-width: 44ch;
-}
-
 .league-prompt .btn {
   margin-top: var(--space-2);
 }

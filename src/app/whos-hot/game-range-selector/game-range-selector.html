@@ -27,10 +27,6 @@
             <app-icon name="lock" size="0.85em" />
             Premium
           </a>
-          <app-help-tip
-            label="Why the other ranges are off"
-            text="Unlock custom game ranges with Premium."
-          />
         }
       </div>
     </div>
@@ -108,7 +104,6 @@
         <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
         Per game
       </button>
-      <app-help-tip label="What per game does" text="Display stats on a per-game basis." />
     </div>
 
     <!-- The minimum only means something once the leaderboard is scored per game: a rate off two
@@ -119,10 +114,6 @@
     @if (perGame()) {
       <div class="option min-games">
         <label for="min-games">Min. games</label>
-        <app-help-tip
-          label="What the minimum does"
-          text="Hide players with fewer appearances than this minimum."
-        />
         <input
           id="min-games"
           type="number"

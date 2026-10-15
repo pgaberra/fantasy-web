@@ -1137,10 +1137,7 @@ describe('StreamerPlannerComponent', () => {
         expect(tick.checked).toBe(true);
         expect(
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
-        ).toEqual([
-          'Available in your roster',
-          'Available only if a player at a specific position is dropped',
-        ]);
+        ).toEqual(['Available in your roster', 'Open if you drop a player']);
         // The legend does not say to hover: each yellow run carries the info glyph that does, and a
         // green run, which has no tip, carries none.
         expect(ngMocks.findAll(fixture, '.day-room--drop .room-hint')).toHaveLength(4);
