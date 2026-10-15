@@ -94,7 +94,7 @@ describe('PremiumComponent', () => {
     const fixture = MockRender(PremiumComponent);
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Premium was given to you, free, until');
+    expect(text).toContain('Given to you free until');
     expect(text).not.toContain('Manage subscription');
   });
 
@@ -268,8 +268,8 @@ describe('PremiumComponent', () => {
       const fixture = MockRender(PremiumComponent);
 
       const text = fixture.nativeElement.textContent;
-      expect(text).toContain('Premium remains active until October 7, 2026');
-      expect(text).toContain('No further charges will be made');
+      expect(text).toContain('Premium stays active until October 7, 2026');
+      expect(text).toContain('with no further charges');
       expect(text).not.toContain('Renews on');
     });
 
