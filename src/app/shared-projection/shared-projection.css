@@ -123,16 +123,9 @@
 }
 
 .cta-title {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-4);
   font-size: var(--text-lg);
   color: var(--color-text);
-}
-
-.cta-body {
-  margin: 0 auto var(--space-4);
-  max-width: 46ch;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
 }
 
 .shared-footer {
@@ -157,16 +150,9 @@
 }
 
 .gone-title {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-4);
   font-size: var(--text-lg);
   color: var(--color-text);
-}
-
-.gone-body {
-  margin: 0 auto var(--space-4);
-  max-width: 44ch;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
 }
 
 @media (max-width: 640px) {

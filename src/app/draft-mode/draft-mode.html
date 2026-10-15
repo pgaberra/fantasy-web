@@ -155,7 +155,7 @@
           <!-- Syncing is switched on in the settings, so what stopped it says where to go. -->
           <p class="follow-status follow-status--warn" role="status">
             <app-icon name="alert-triangle" [size]="14" />
-            <span>{{ notice }} Picks are not syncing. You can switch it back on in Settings.</span>
+            <span>{{ notice }} Picks aren't syncing; turn it back on in Settings.</span>
           </p>
         }
 
@@ -224,12 +224,10 @@
             <div class="modal" role="dialog" aria-modal="true">
               <h2 class="modal-title">Finish the draft?</h2>
               <p class="modal-text">
-                @if (isComplete()) {
-                  Finishing marks the draft complete. You can still change picks afterwards.
-                } @else {
-                  The draft is not finished yet, {{ picks().length }} of {{ totalPicks() }} picks
-                  made. You can finish now and change picks later.
+                @if (!isComplete()) {
+                  {{ picks().length }} of {{ totalPicks() }} picks made.
                 }
+                You can still change picks afterwards.
               </p>
               <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" (click)="cancelFinish()">

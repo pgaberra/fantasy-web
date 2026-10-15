@@ -211,7 +211,7 @@ describe('LeagueSyncComponent', () => {
       const text = dialog(fixture)?.textContent;
       expect(text).toContain('Disconnect your ESPN league?');
       expect(text).toContain('Tampa Bay Pro');
-      expect(text).toContain('Switching to Yahoo disconnects it.');
+      expect(text).toContain('Switching to Yahoo disconnects Tampa Bay Pro on ESPN.');
       // Asking changes nothing yet: the tab and the league are where they were.
       expect(tab(fixture, 'ESPN').getAttribute('aria-selected')).toEqual('true');
       expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
@@ -227,7 +227,7 @@ describe('LeagueSyncComponent', () => {
       const text = dialog(fixture)?.textContent;
       expect(text).toContain('Disconnect your Yahoo league?');
       expect(text).toContain('HHL');
-      expect(text).toContain('Switching to ESPN disconnects it.');
+      expect(text).toContain('Switching to ESPN disconnects HHL on Yahoo.');
     });
 
     it('keeps the league and the tab when the question is declined', async () => {

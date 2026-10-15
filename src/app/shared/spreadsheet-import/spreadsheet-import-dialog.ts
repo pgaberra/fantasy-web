@@ -150,9 +150,7 @@ export class SpreadsheetImportDialogComponent {
       .filter((column) => column.heading || column.sample);
   });
 
-  readonly headingRowTip =
-    'The row in your file that holds the column names (Player, GP, G). Rows above it are ' +
-    'ignored, so a file that starts with a title, instructions or a row of weights still works.';
+  readonly headingRowTip = 'The row with the column names; rows above it are ignored';
 
   readonly hasNameColumn = computed(() => this.roles().some((role) => role?.kind === 'name'));
   readonly statCount = computed(() => this.roles().filter((role) => role?.kind === 'stat').length);

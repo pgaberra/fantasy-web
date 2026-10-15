@@ -27,7 +27,6 @@ import { CreateProjectionRequest } from '../api/models/create-projection-request
 import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
-import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { ShareImportComponent } from '../shared/share-import/share-import';
 import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
@@ -113,7 +112,6 @@ export function requestedPreset(value: unknown): CreatePreset['source'] | null {
   imports: [
     LoadingIndicatorComponent,
     ErrorStateComponent,
-    HelpTipComponent,
     RouterLink,
     StartingPointPreviewComponent,
     ShareImportComponent,

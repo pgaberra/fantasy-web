@@ -155,7 +155,7 @@
     </thead>
     <tbody>
       @for (entry of entries(); track entry.row.player.playerId) {
-        <tr class="player-row">
+        <tr class="player-row" [class.player-row--held]="dimmed(entry.row)">
           <td class="num rank-col" [appTooltip]="riseTip(entry.row)">
             <span class="figure-now">{{ entry.row.rank }}</span>
             @if (rise(entry.row); as delta) {
@@ -174,34 +174,30 @@
                 <span class="player-meta">
                   <span class="player-role">
                     <app-position-chips [positions]="entry.row.player.positions" />
-                    <!-- Waivers is his status, not a position, so it follows the chips rather than
-                         standing among them; after them, not by the name, since on a phone the name
-                         line has no room for it and it took a line of its own. -->
-                    @if (onWaivers(entry.row)) {
-                      <span
-                        class="player-status"
-                        role="img"
-                        aria-label="On waivers"
-                        tabindex="0"
-                        appTooltip="On waivers"
-                      >
-                        <app-icon name="hourglass" [size]="14" />
-                      </span>
-                    }
                   </span>
-                  @if (showOwner()) {
-                    <!-- The user's own team wears its name like every other, so a "Mine" never
-                         reads as a league rival; the filled pill and the figure say it is theirs,
-                         the same fill the league table's You badge uses. -->
-                    @if (entry.row.scout.owner?.mine) {
-                      <span class="scout-tag scout-tag--owner scout-tag--mine">
-                        <app-icon name="user" [size]="14" />
-                        <span class="sr-only">Your team: </span>
-                        <span class="scout-tag-name">{{ ownerTag(entry.row) }}</span>
-                      </span>
-                    } @else {
-                      <span class="scout-tag scout-tag--owner">{{ ownerTag(entry.row) }}</span>
-                    }
+                  <!-- What the row is to the reader: one he can pick up, his own, or another team's.
+                       The pickable wear the one green pill in the column, "FA" or "Waivers", so the
+                       eye finds them without reading; "FA" is left off a list of nothing else. His
+                       own team is the filled pill the league table's You badge wears, with a figure
+                       in front of the name so the mark is not colour alone. Another team's name is
+                       plain text, no chip: it is context, not something to find. -->
+                  @if (availabilityTag(entry.row); as tag) {
+                    <span class="scout-tag scout-tag--free">
+                      @if (onWaivers(entry.row)) {
+                        <app-icon name="hourglass" [size]="14" />
+                      }
+                      <span class="scout-tag-name">{{ tag }}</span>
+                    </span>
+                  } @else if (showOwner() && entry.row.scout.owner?.mine) {
+                    <span class="scout-tag scout-tag--owner scout-tag--mine">
+                      <app-icon name="user" [size]="14" />
+                      <span class="sr-only">Your team: </span>
+                      <span class="scout-tag-name">{{ ownerTag(entry.row) }}</span>
+                    </span>
+                  } @else if (showOwner() && entry.row.scout.owner) {
+                    <span class="scout-tag scout-tag--owner scout-tag--held">{{
+                      ownerTag(entry.row)
+                    }}</span>
                   }
                   @if (comparing() && entry.row.rising) {
                     <span class="scout-tag scout-tag--rising">Rising</span>

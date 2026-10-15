@@ -36,9 +36,7 @@ export class FullSeasonDialogComponent {
   readonly minGamesToScale = signal<number>(20);
   readonly scaleGoalies = signal<boolean>(false);
 
-  readonly scalingTooltip =
-    'Counting stats such as goals and assists scale with games played. Rate stats such as ' +
-    'SH%, SV% and GAA stay unchanged. Any games-played values you edited by hand will be overwritten.';
+  readonly scalingTooltip = "Overwrites GP you edited by hand; rate stats don't change.";
 
   toggleScaleStats(): void {
     this.scaleStats.update((enabled) => !enabled);
