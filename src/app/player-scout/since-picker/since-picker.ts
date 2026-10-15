@@ -61,9 +61,13 @@ export function sinceCaption(answer: ScoutSince | null): string {
 }
 
 /**
- * The earlier projection to compare with: the one from before the season, or the one of any day
- * of the reader's own. The model is re-run every night, so each day is a projection of its own,
- * and the caption says which day actually answered.
+ * The comparison, as one choice of three: off, the projection from before the season, or the one
+ * of any day of the reader's own. The model is re-run every night, so each day is a projection
+ * of its own; the page's caption says which day actually answered ({@link sinceCaption}).
+ *
+ * <p>Off and a day are the one control rather than a tick and a picker under it (Alexander,
+ * 2026-10-15): the tick said "compare", the picker said "with what", and the two took three lines
+ * to say one thing.
  */
 @Component({
   selector: 'app-since-picker',
@@ -72,14 +76,15 @@ export function sinceCaption(answer: ScoutSince | null): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SincePickerComponent {
+  /** Whether a comparison is on at all. Off, the day below is kept but not asked. */
+  readonly on = input.required<boolean>();
   /** The day picked, as an ISO date, or null for the preseason projection. */
   readonly since = input.required<string | null>();
-  /** What the BFF answered the day with, once it has; null while it loads. */
-  readonly answer = input<ScoutSince | null>(null);
   readonly today = input<string>(localToday());
+  /** The preseason (null) or a day picked, which also switches the comparison on. */
   readonly sinceChange = output<string | null>();
-
-  readonly caption = computed(() => sinceCaption(this.answer()));
+  /** Off pressed: the comparison switched off, the day kept for next time. */
+  readonly cleared = output<void>();
 
   /** The earliest day the field offers: the season is never more than a year old. */
   readonly earliest = computed(() => daysBefore(this.today(), 365));
@@ -87,17 +92,24 @@ export class SincePickerComponent {
   /** The latest: yesterday, since today's projection is the one everything is compared with. */
   readonly latest = computed(() => daysBefore(this.today(), 1));
 
-  /** The day the field opens on when the preseason is picked: a week back, a usual look. */
+  /** The day the field opens on when no day is picked: a week back, a usual look. */
   readonly suggested = computed(() => daysBefore(this.today(), 7));
+
+  pickOff(): void {
+    this.cleared.emit();
+  }
 
   pickPreseason(): void {
     this.sinceChange.emit(null);
   }
 
-  /** The date field taken up while the preseason is picked: hand it a day to start from. */
+  /**
+   * The date field taken up while it is not the pick: the day it holds, or a week back when it
+   * holds none, so the comparison is on the moment the field is touched.
+   */
   pickDay(): void {
-    if (this.since() === null) {
-      this.sinceChange.emit(this.suggested());
+    if (!this.on() || this.since() === null) {
+      this.sinceChange.emit(this.since() ?? this.suggested());
     }
   }
 
