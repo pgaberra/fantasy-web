@@ -87,7 +87,7 @@ describe('FullSeasonDialogComponent', () => {
     fixture.point.componentInstance.toggleScaleGoalies();
     fixture.detectChanges();
     const warning = ngMocks.find('.option-warning');
-    expect(warning.nativeElement.textContent).toContain('82-game season');
+    expect(warning.nativeElement.textContent).toContain('built on 82 games');
     expect(warning.nativeElement.getAttribute('role')).toEqual('alert');
   });
 });

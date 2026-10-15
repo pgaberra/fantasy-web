@@ -11,9 +11,8 @@
   color: var(--color-primary);
 }
 
-.subtitle {
-  color: var(--color-text-subtle);
-  margin: var(--space-1) 0 var(--space-5);
+.page-header {
+  margin-bottom: var(--space-5);
 }
 
 .create-row {
@@ -39,12 +38,6 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   color: var(--color-text);
-}
-
-.state-message {
-  margin: 0;
-  font-size: var(--text-sm);
-  max-width: 40ch;
 }
 
 .state .btn {

@@ -49,10 +49,6 @@
     <fieldset class="field starting">
       <legend class="field-label-row">
         <h2 class="section-title" id="starting-point-label">Starting point</h2>
-        <app-help-tip
-          label="What this starting point includes"
-          text="The stats players start with."
-        />
       </legend>
 
       <div class="segmented" role="group" aria-labelledby="starting-point-label">
@@ -73,9 +69,7 @@
         @switch (sourceKind()) {
           @case ('projection') {
             @if (ownProjections().length === 0) {
-              <p class="group-empty">
-                You have no saved projections yet. Start with a preset or create one from scratch.
-              </p>
+              <p class="group-empty">No saved projections yet.</p>
             } @else {
               <ul class="rows">
                 @for (projection of ownProjections(); track projection.id) {

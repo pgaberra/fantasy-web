@@ -24,7 +24,7 @@ describe('OffseasonDataNoticeComponent', () => {
     expect(fixture.nativeElement.querySelector('.offseason-notice')).not.toBeNull();
     expect(text).toContain('off-season');
     expect(text).toContain('rookie');
-    expect(text).toContain('team affiliations');
+    expect(text).toContain('trades and signings');
     // The unavailable sync is hidden rather than explained — nothing to caveat.
     expect(text).not.toContain('yahoo sync');
   });

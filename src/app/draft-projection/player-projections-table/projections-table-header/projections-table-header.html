@@ -192,11 +192,7 @@
           <label [id]="'menu-scale-' + col">Auto-scale scoring stats</label>
           <app-help-tip
             label="What auto-scaling does"
-            [text]="
-              'Scale the selected scoring stats proportionally when ' +
-              (col | statLabel) +
-              ' is edited.'
-            "
+            [text]="'Scales the stats below when ' + (col | statLabel) + ' changes'"
           />
         </span>
         <app-toggle-switch

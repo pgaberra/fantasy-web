@@ -53,13 +53,10 @@
     <div class="menu-separator"></div>
     <p class="menu-title">Roster slots</p>
     <app-roster-slots-editor [(rosterSlots)]="rosterSlots" [disabled]="locked()" />
-    <p class="menu-note">
-      @if (locked()) {
-        League size and roster slots come from {{ syncedLeagueName() }}. Disconnect the league to
-        change them.
-      } @else {
-        The Z-Score algorithm uses league size and roster slots to refine your player rankings.
-      }
-    </p>
+    @if (locked()) {
+      <p class="menu-note">
+        Set by {{ syncedLeagueName() }}. Disconnect the league to change them.
+      </p>
+    }
   }
 }

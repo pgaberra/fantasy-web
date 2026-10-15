@@ -310,22 +310,13 @@ describe('ProjectionsTableHeaderComponent', () => {
         },
       });
 
-    it('says what a utility column is for, which its label cannot', () => {
-      expect(scalingHeader().utilityTooltip('gp')).toEqual(
-        'Games Played. A utility stat used to scale or project other stats.',
-      );
+    it('names a utility column in full, and says nothing more', () => {
+      expect(scalingHeader().utilityTooltip('gp')).toEqual('Games Played');
     });
 
     it('keeps expanding the abbreviation, which is the only place TOI/G is spelled out', () => {
-      expect(scalingHeader().utilityTooltip('toiPerGame')).toEqual(
-        'Time on Ice per Game. A utility stat used to scale or project other stats.',
-      );
-    });
-
-    it('promises no scaling where there is no projection to scale', () => {
-      expect(getComponent().utilityTooltip('toiPerGame')).toEqual(
-        'Time on Ice per Game. A utility stat used only for scaling or projection.',
-      );
+      expect(scalingHeader().utilityTooltip('toiPerGame')).toEqual('Time on Ice per Game');
+      expect(getComponent().utilityTooltip('toiPerGame')).toEqual('Time on Ice per Game');
     });
 
     it('says what GP counts over on a surface that measures a stretch of the schedule', () => {
@@ -333,15 +324,11 @@ describe('ProjectionsTableHeaderComponent', () => {
       // heading alone cannot tell them apart.
       expect(
         getComponent({ gamesPlayedScope: 'the selected game range' }).utilityTooltip('gp'),
-      ).toEqual(
-        'Games Played, games within the selected game range. A utility stat used only for scaling or projection.',
-      );
+      ).toEqual('Games Played, games within the selected game range');
     });
 
     it('leaves GP unqualified where the projection is of a whole season', () => {
-      expect(getComponent().utilityTooltip('gp')).toEqual(
-        'Games Played. A utility stat used only for scaling or projection.',
-      );
+      expect(getComponent().utilityTooltip('gp')).toEqual('Games Played');
     });
 
     it('opens the scoring block at the first scoring column of every header row', () => {

@@ -1,7 +1,6 @@
 <div class="projection-list">
   <div class="page-header">
     <h1>My Projections</h1>
-    <p class="subtitle">Create a new projection or open an existing one to keep editing.</p>
   </div>
 
   @if (!projectionsResource.isLoading() && !isSavingDemo()) {
@@ -25,7 +24,6 @@
     <div class="state">
       <app-icon name="clipboard-list" [size]="48" class="state-icon" />
       <p class="state-title">No projections yet</p>
-      <p class="state-message">Create a projection to start ranking players for your league.</p>
     </div>
   } @else {
     <!-- The same control the create page and the draft picker put over the same two groups, so
