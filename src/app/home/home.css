@@ -14,11 +14,6 @@
   text-wrap: balance;
 }
 
-.subtitle {
-  color: var(--color-text-subtle);
-  margin: var(--space-1) 0 0;
-}
-
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
