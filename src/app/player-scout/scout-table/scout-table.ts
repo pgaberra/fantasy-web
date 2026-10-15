@@ -389,13 +389,13 @@ export class ScoutTableComponent {
     return row.player.availability === 'WAIVERS';
   }
 
-  /** Who holds him, for a list of more than the wire: "FA", "Mine", or the team's name. */
+  /**
+   * Who holds him, for a list of more than the wire: "FA" or the team's name, the user's own
+   * included. It read "Mine" there once, and "Mine" beside a column of team names looked like
+   * one more team; the template marks the user's own by look instead.
+   */
   ownerTag(row: ScoutRow): string {
-    const owner = row.scout.owner;
-    if (!owner) {
-      return 'FA';
-    }
-    return owner.mine ? 'Mine' : owner.teamName;
+    return row.scout.owner?.teamName ?? 'FA';
   }
 
   isNil(stat: LineStat): boolean {

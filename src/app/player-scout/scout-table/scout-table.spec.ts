@@ -288,8 +288,10 @@ describe('ScoutTableComponent', () => {
     const tags = ngMocks
       .findAll(fixture, '.scout-tag--owner')
       .map((tag) => ngMocks.formatText(tag));
-    expect(tags).toEqual(['FA', 'Mine', 'Someone Else']);
-    expect(ngMocks.findAll(fixture, '.scout-tag--mine')).toHaveLength(1);
+    expect(tags).toEqual(['FA', 'Your team: Slapshots', 'Someone Else']);
+    const mine = ngMocks.findAll(fixture, '.scout-tag--mine');
+    expect(mine).toHaveLength(1);
+    expect(ngMocks.formatText(mine[0])).toBe('Your team: Slapshots');
   });
 
   it("heads a column for each of the league's categories", () => {

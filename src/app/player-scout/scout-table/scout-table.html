@@ -206,11 +206,18 @@
                     }
                   </span>
                   @if (showOwner()) {
-                    <span
-                      class="scout-tag scout-tag--owner"
-                      [class.scout-tag--mine]="entry.row.scout.owner?.mine"
-                      >{{ ownerTag(entry.row) }}</span
-                    >
+                    <!-- The user's own team wears its name like every other, so a "Mine" never
+                         reads as a league rival; the filled pill and the figure say it is theirs,
+                         the same fill the league table's You badge uses. -->
+                    @if (entry.row.scout.owner?.mine) {
+                      <span class="scout-tag scout-tag--owner scout-tag--mine">
+                        <app-icon name="user" [size]="14" />
+                        <span class="sr-only">Your team: </span>
+                        <span class="scout-tag-name">{{ ownerTag(entry.row) }}</span>
+                      </span>
+                    } @else {
+                      <span class="scout-tag scout-tag--owner">{{ ownerTag(entry.row) }}</span>
+                    }
                   }
                   @if (comparing() && entry.row.rising) {
                     <span class="scout-tag scout-tag--rising">Rising</span>
