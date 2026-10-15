@@ -19,7 +19,6 @@ import {
   lineStats,
   NO_RATE,
 } from '../../streamer-planner/planner-free-agents';
-import { LineupSwap } from '../lineup-value';
 import {
   SCOUT_RANKED_ORDER,
   ScoutRow,
@@ -57,11 +56,15 @@ interface ScoutEntry {
 /** A minute a game more ice than the chosen day's line gave him: a role, not a rounding. */
 const MORE_ICE_SECONDS = 60;
 
+/** The gains that wear the gold: the medal on the best pickups, as the planner's list gives three. */
+export const TOP_GAINS = 3;
+
 /**
  * Every player on the page in one list, skaters and goalies, in one of two views. The
  * projection view is the planner's free-agent table: the score, games, ice time and each
  * category the league scores, and, with a comparison switched on, each figure wearing its change
- * since the chosen day underneath, the place gained or lost under the rank. The ice view keeps
+ * since the chosen day underneath, the place gained or lost under the rank; with a full roster, what
+ * the lineup gains by each pickup against the drop the page has chosen, one figure a row. The ice view keeps
  * the rank, the player and the score to sort by, and shows what the ice has measured instead:
  * ice a game, power-play ice and share of the club's power play over the recent games against
  * before them, and where Daily Faceoff lists him now and listed him then. The order is the
@@ -89,14 +92,42 @@ export class ScoutTableComponent {
 
   /** The comparison belongs to the projection view: the ice view has its own before-and-after. */
   readonly comparing = computed(() => this.compare() && this.view() === 'projection');
+
+  /** The gain column belongs to the projection view too. */
+  readonly gaining = computed(() => this.view() === 'projection' && this.gains() !== null);
+
+  /**
+   * The three pickups the lineup gains the most by, among every one the page priced: the gold
+   * goes with the figure, not the row, so a page of the list whose best gain is fourth shows none.
+   * A gain of nothing or less decides nothing, and wears none.
+   */
+  readonly topGains = computed<ReadonlySet<string>>(() => {
+    const gains = this.gains();
+    if (!gains) {
+      return new Set();
+    }
+    return new Set(
+      [...gains]
+        .filter((entry): entry is [string, number] => entry[1] !== null && entry[1] > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, TOP_GAINS)
+        .map(([playerId]) => playerId),
+    );
+  });
   /** What the then-lines are, for the group heading: "vs 7 Oct", "vs preseason". */
   readonly sinceLabel = input<string>('vs preseason');
   /** What the ice is measured over, for its group heading: "last 5 games", "since 7 Oct". */
   readonly iceLabel = input<string>('last 5 games');
   /** Whether each row says who holds the player: only a list of more than the wire needs it. */
   readonly showOwner = input<boolean>(false);
-  /** Each player's best swap by platform id, or null for no Swap column: no team of the user's. */
-  readonly swaps = input<ReadonlyMap<string, LineupSwap | null> | null>(null);
+  /**
+   * What the lineup gains by each available player against the chosen drop, by platform id (null
+   * for one the page could not price), or null for no gain column: nobody to drop, or no team
+   * of the user's.
+   */
+  readonly gains = input<ReadonlyMap<string, number | null> | null>(null);
+  /** The chosen drop's surname, for the gain column's heading. */
+  readonly dropName = input<string>('');
   /** The order the list is in, which the headings show. */
   readonly sort = input<ScoutSort>(SCOUT_RANKED_ORDER);
   /** A heading pressed: the page sorts the whole list by that column, or turns it round. */
@@ -339,48 +370,28 @@ export class ScoutTableComponent {
       : 'Where Daily Faceoff lists him, unchanged over the recent games';
   }
 
-  // --- The swap ---------------------------------------------------------------------------------
-
-  swap(row: ScoutRow): LineupSwap | null {
-    return this.swaps()?.get(row.player.playerId) ?? null;
-  }
+  // --- The gain ---------------------------------------------------------------------------------
 
   /** Whether the row is a player the user could pick up: one the league has available. */
   pickable(row: ScoutRow): boolean {
     return row.scout.owner === null;
   }
 
-  /** "+12.4" for an upgrade, "-3.1" for none. */
-  gain(swap: LineupSwap): string {
-    return signed(swap.gain, this.scoreDigits()).text;
+  /** "+12.4" for an upgrade, "-3.1" for none, "0.0" for neither; null where the page could not price him. */
+  gain(row: ScoutRow): string | null {
+    const gain = this.gains()?.get(row.player.playerId) ?? null;
+    if (gain === null) {
+      return null;
+    }
+    const text = gain.toFixed(this.scoreDigits());
+    if (Number(text) === 0) {
+      return (0).toFixed(this.scoreDigits());
+    }
+    return gain > 0 ? `+${text}` : text;
   }
 
-  /** Who makes room: "for Jake Walman", "Hronek to IR", "open spot". */
-  making(swap: LineupSwap): string {
-    switch (swap.kind) {
-      case 'open':
-        return 'open spot';
-      case 'reserve':
-        return `${swap.move.player.name} to ${swap.move.slot}`;
-      case 'drop':
-        return `for ${swap.drop.name}`;
-    }
-  }
-
-  swapTip(row: ScoutRow): string {
-    const swap = this.swap(row);
-    if (!swap) {
-      return 'Nobody on your team of his kind the model can weigh against him';
-    }
-    if (swap.kind === 'open') {
-      return 'You have an open roster spot: what his starts would add to your lineup over the rest of the season';
-    }
-    if (swap.kind === 'reserve') {
-      return `Move ${swap.move.player.name} to ${swap.move.slot} and his roster spot takes this pickup: what the pickup's starts would add`;
-    }
-    return swap.gain > 0
-      ? `Drop ${swap.drop.name} for him: the swap that leaves your lineup worth the most over the rest of the season, with every night's starters set`
-      : `Not an upgrade: with ${swap.drop.name} dropped for him, the player whose going costs least, your lineup is worth less over the rest of the season`;
+  isTopGain(row: ScoutRow): boolean {
+    return this.topGains().has(row.player.playerId);
   }
 
   // --- The player cell ---------------------------------------------------------------------------

@@ -1,8 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Projection } from '../../models/projection.model';
-import { ScoutPlayer, TeamPlayer } from '../../services/player-scout.service';
-import { LineupSwap } from '../lineup-value';
+import { ScoutPlayer } from '../../services/player-scout.service';
 import { ScoutRow } from '../scout-ranking';
 import { usageChange } from '../scout-usage';
 import { ScoutTableComponent, ScoutView } from './scout-table';
@@ -117,7 +116,8 @@ describe('ScoutTableComponent', () => {
     extra: {
       view?: ScoutView;
       compare?: boolean;
-      swaps?: ReadonlyMap<string, LineupSwap | null> | null;
+      gains?: ReadonlyMap<string, number | null> | null;
+      dropName?: string;
       showOwner?: boolean;
     } = {},
   ) {
@@ -347,61 +347,80 @@ describe('ScoutTableComponent', () => {
     expect(sorted[0].nativeElement.getAttribute('aria-sort')).toBe('ascending');
   });
 
-  it("has no Swap column without a team of the user's, nor in the ice view", () => {
-    expect(ngMocks.formatText(render([row(1, 'Brandon Montour', 1)]))).not.toContain('Swap');
+  it('has no gain column without a drop, nor in the ice view', () => {
+    expect(ngMocks.formatText(render([row(1, 'Brandon Montour', 1)]))).not.toContain('Gain');
     expect(
-      ngMocks.formatText(render([row(1, 'Brandon Montour', 1)], { view: 'ice', swaps: new Map() })),
-    ).not.toContain('Swap');
+      ngMocks.formatText(
+        render([row(1, 'Brandon Montour', 1)], {
+          view: 'ice',
+          gains: new Map(),
+          dropName: 'Hughes',
+        }),
+      ),
+    ).not.toContain('Gain');
   });
 
-  it('shows the gain of each swap and the player to drop for it, and nothing for a rostered player', () => {
-    const drop: TeamPlayer = {
-      playerId: '7',
-      name: 'Jake Walman',
-      type: 'skater',
-      positions: ['D'],
-      reserve: false,
-      out: false,
-      reserveEligible: [],
-      projection: null,
-    };
-    const fixture = render(
-      [
+  it('heads a sortable gain column by the drop, with the three biggest gains in gold and a pickup it could not price as a question', () => {
+    const sortBy = vi.fn();
+    const fixture = MockRender(ScoutTableComponent, {
+      rows: [
         row(1, 'Brandon Montour', 1),
         row(2, 'Ryan Graves', 2),
         row(3, 'Nobody', 3),
         row(4, 'Pavel Zacha', 4),
         row(5, 'Conor Garland', 5),
         row(6, 'Cale Makar', 6, { owner: { teamName: 'Slapshots', mine: true } }),
+        row(7, 'Steady Eddie', 7),
       ],
-      {
-        swaps: new Map<string, LineupSwap | null>([
-          ['1', { kind: 'drop', drop, gain: 25 }],
-          ['2', { kind: 'drop', drop, gain: -4.25 }],
-          ['3', null],
-          [
-            '4',
-            {
-              kind: 'reserve',
-              move: { player: { ...drop, name: 'Filip Hronek' }, slot: 'IR' },
-              gain: 80,
-            },
-          ],
-          ['5', { kind: 'open', gain: 70 }],
-        ]),
-      },
-    );
+      scoringType: 'points',
+      categories: ['goals', 'assists'],
+      gains: new Map<string, number | null>([
+        ['1', 25],
+        ['2', -4.25],
+        ['3', null],
+        ['4', 80],
+        ['5', 70],
+        ['7', 0.04],
+      ]),
+      dropName: 'Hughes',
+      sortBy,
+    });
 
-    const text = (selector: string) =>
-      ngMocks.findAll(fixture, selector).map((cell) => ngMocks.formatText(cell));
-    expect(text('.swap-gain')).toEqual(['+25.0', '-4.3', '+80.0', '+70.0']);
-    expect(text('.swap-drop')).toEqual([
-      'for Jake Walman',
-      'for Jake Walman',
-      'Filip Hronek to IR',
-      'open spot',
+    const heading = ngMocks.find(fixture, 'th.gain-col');
+    expect(ngMocks.formatText(heading)).toBe('Gain if you drop Hughes');
+    expect(ngMocks.findAll(fixture, 'td[tabindex]')).toHaveLength(0);
+    const cells = ngMocks.findAll(fixture, 'td.gain-col');
+    expect(cells.map((cell) => ngMocks.formatText(cell))).toEqual([
+      '+25.0',
+      '-4.3',
+      '?',
+      '+80.0',
+      '+70.0',
+      '',
+      '0.0',
     ]);
-    expect(text('.swap-none')).toEqual(['No one to drop']);
-    expect(ngMocks.formatText(ngMocks.findAll(fixture, 'td.swap-col')[5])).toBe('');
+    expect(cells.map((cell) => cell.nativeElement.classList.contains('gain-col--top'))).toEqual([
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+    ]);
+    // The phone's line in the player cell says the same, for every pickup.
+    const lines = ngMocks.findAll(fixture, '.player-gain');
+    expect(lines.map((line) => ngMocks.formatText(line))).toEqual([
+      'Gain +25.0',
+      'Gain -4.3',
+      'Gain ?',
+      'Gain +80.0',
+      'Gain +70.0',
+      'Gain 0.0',
+    ]);
+    expect(lines[3].nativeElement.classList).toContain('player-gain--top');
+
+    press(fixture, 'Gain if you drop Hughes');
+    expect(sortBy.mock.calls).toEqual([['gain']]);
   });
 });

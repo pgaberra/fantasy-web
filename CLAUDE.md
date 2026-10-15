@@ -408,7 +408,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   shown in a view of its own. The league is picked with the planner's own field
   (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. **Two
   views** (`ScoutView`, switched like the planner's): *Projection* (score, games, ice time, the
-  league's categories, Swap) and *On the ice* (measured ice a game, PP ice, PP share and the
+  league's categories, and the gain against the chosen drop) and *On the ice* (measured ice a game, PP ice, PP share and the
   Daily Faceoff listing over each club's last 3/5/10 games, or since the comparison's day,
   against his games before; `scout-usage.ts`, the old Role Changes model; the BFF's
   `recentGames`). Both keep the rank, the player and the score to sort by. **The comparison is
@@ -424,8 +424,20 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   over the rest of the season** (`lineup-value.ts`: `valueLineup` seats the roster into the
   league's slots on every remaining night, best players first, so a player's *lineup cost* is
   what the team loses without him, which for a third centre behind two centre seats is nought
-  whatever he projects; `swapInto` prices each available player's best swap the same way). The
-  room line names the cheapest drop; the roster folds out under it with starts and lineup cost.
+  whatever he projects). **The drop is a page state, not a property of each row** (Alexander,
+  2026-10-15, after an Impeccable critique found the old Swap column naming the same drop on
+  nearly every row): with a full roster the room line offers the four cheapest holders of a
+  roster spot as chips, the cheapest pressed (computed from the fetched roster, never assumed),
+  and "Other..." unfolds the roster where any holder can be picked; `priceDrop` then prices every
+  available player in the filtered list against that one drop, so the "Gain if you drop
+  <surname>" column sorts, and the three biggest gains wear the gold wash. A player who is out is
+  kept off the chips, since his empty seat makes him cheapest by our reckoning; picked, he reads
+  "0.0 while out". A pickup whose club has no night in the schedule reads "?", never a figure.
+  With an open spot or an injured player to move to IR there are no chips and no column: the room
+  line is the whole answer. The fold-out shows the four cheapest first with "Show all N", IR
+  players under one line, and the one caption under the room line says what cost and gain are
+  (a phone shows no tooltip). Under 38rem the gain rides as a line in the frozen player cell and
+  the roster keeps Player, Starts and Lineup cost with the player pinned.
   `drop-candidates.ts` (`teamRoom`, `scoreTeam`) lives here too and Start/Bench reads it; the
   roster's types and `toScoutTeam` are in `services/player-scout.service.ts`.
 - `start-bench/` — the **Start/Bench** page (`/start-bench`, signed in, served only where the BFF's

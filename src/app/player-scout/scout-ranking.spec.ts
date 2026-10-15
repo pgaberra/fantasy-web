@@ -241,6 +241,30 @@ describe('sorting the scout list', () => {
     expect(ids(sortScout(measured, { key: 'ice', descending: false }))).toEqual(['3', '2', '1']);
   });
 
+  it('sorts by the gain against the chosen drop, the biggest first, a pickup it could not price last', () => {
+    const gains = new Map<string, number | null>([
+      ['1', -4],
+      ['2', 12.5],
+      ['3', null],
+      ['4', 30],
+    ]);
+
+    expect(ids(sortScout(rows, { key: 'gain', descending: true }, gains))).toEqual([
+      '4',
+      '2',
+      '1',
+      '3',
+    ]);
+    expect(ids(sortScout(rows, { key: 'gain', descending: false }, gains))).toEqual([
+      '1',
+      '2',
+      '4',
+      '3',
+    ]);
+    // Without any gains handed in, the column says nothing: the ranked order stands.
+    expect(ids(sortScout(rows, { key: 'gain', descending: true }))).toEqual(['1', '2', '3', '4']);
+  });
+
   it('sorts the other columns as the planner does', () => {
     expect(ids(sortScout(rows, { key: 'score', descending: false }))).toEqual(['4', '3', '2', '1']);
     expect(ids(sortScout(rows, { key: 'name', descending: true }))).toEqual(['4', '3', '2', '1']);

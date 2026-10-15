@@ -127,10 +127,10 @@ export function statOf(line: Projection | null, key: string): number | null {
 // --- Sorting the list ----------------------------------------------------------------------------
 
 /**
- * A column the list can be sorted by: the planner's, the change in score, the places gained, and
- * the two measured changes on the ice.
+ * A column the list can be sorted by: the planner's, the change in score, the places gained, the
+ * two measured changes on the ice, and what the lineup gains by a pickup against the chosen drop.
  */
-export type ScoutSortKey = FreeAgentSortKey | 'delta' | 'rise' | 'ice' | 'powerPlay';
+export type ScoutSortKey = FreeAgentSortKey | 'delta' | 'rise' | 'ice' | 'powerPlay' | 'gain';
 
 export interface ScoutSort {
   readonly key: ScoutSortKey;
@@ -143,7 +143,7 @@ export const SCOUT_RANKED_ORDER: ScoutSort = RANKED_ORDER;
 /** The order the page opens in: the players the model makes the most more of since the day. */
 export const SCOUT_MOVERS_ORDER: ScoutSort = { key: 'delta', descending: true };
 
-const SCOUT_OWN_KEYS: readonly ScoutSortKey[] = ['delta', 'rise', 'ice', 'powerPlay'];
+const SCOUT_OWN_KEYS: readonly ScoutSortKey[] = ['delta', 'rise', 'ice', 'powerPlay', 'gain'];
 
 /**
  * Sorts by a column, best first, whichever end of the scale that is: the furthest risen first, and
@@ -161,7 +161,11 @@ export function nextScoutSort(current: ScoutSort, key: ScoutSortKey): ScoutSort 
 }
 
 /** The number a row sorts by in one of the scout's own columns; null where it says nothing. */
-function scoutSortValue(row: ScoutRow, key: 'delta' | 'rise' | 'ice' | 'powerPlay'): number | null {
+function scoutSortValue(
+  row: ScoutRow,
+  key: Exclude<ScoutSortKey, FreeAgentSortKey>,
+  gains: ReadonlyMap<string, number | null>,
+): number | null {
   switch (key) {
     case 'delta':
       return row.delta;
@@ -171,22 +175,32 @@ function scoutSortValue(row: ScoutRow, key: 'delta' | 'rise' | 'ice' | 'powerPla
       return row.usage?.iceChange ?? null;
     case 'powerPlay':
       return row.usage?.powerPlayShareChange ?? null;
+    case 'gain':
+      return gains.get(row.player.playerId) ?? null;
   }
 }
 
 /**
  * The list in the order asked for. A player the column says nothing about, as a rise without a
- * then-line, goes last whichever way it points, and players level on it keep their ranked order,
- * as in the planner.
+ * then-line or a gain the page could not price, goes last whichever way it points, and players
+ * level on it keep their ranked order, as in the planner.
+ *
+ * @param gains what the lineup gains by each pickup, by platform id, for the gain column
  */
-export function sortScout(rows: readonly ScoutRow[], sort: ScoutSort): readonly ScoutRow[] {
+export function sortScout(
+  rows: readonly ScoutRow[],
+  sort: ScoutSort,
+  gains: ReadonlyMap<string, number | null> = new Map(),
+): readonly ScoutRow[] {
   const { key } = sort;
-  if (key !== 'delta' && key !== 'rise' && key !== 'ice' && key !== 'powerPlay') {
-    return sortFreeAgents(rows, { key, descending: sort.descending });
+  if (!SCOUT_OWN_KEYS.includes(key)) {
+    return sortFreeAgents(rows, { key: key as FreeAgentSortKey, descending: sort.descending });
   }
+  const own = key as Exclude<ScoutSortKey, FreeAgentSortKey>;
   const sign = sort.descending ? -1 : 1;
   return [...rows].sort(
     (a, b) =>
-      compareStatValues(scoutSortValue(a, key), scoutSortValue(b, key), sign) || a.rank - b.rank,
+      compareStatValues(scoutSortValue(a, own, gains), scoutSortValue(b, own, gains), sign) ||
+      a.rank - b.rank,
   );
 }

@@ -180,31 +180,43 @@
   color: var(--color-danger);
 }
 
-/* The swap: what the lineup gains by him, and who makes room. */
-.scout-table .swap-col {
-  min-width: 7.5rem;
-  text-align: left;
+/* The gain: what the lineup gains over the rest of the season by the pickup against the drop the
+   page has chosen, one figure a row, set right like the figures it sits beside. The heading names
+   the drop. The three biggest gains among everyone priced wear the gold wash, since gold marks the
+   figure that decides; the sign carries the direction, so no green. */
+.scout-table .gain-col {
+  min-width: 6rem;
 }
 
-.scout-table td.swap-col > span {
-  display: block;
+.scout-table thead th.gain-col {
+  color: var(--color-gold-strong);
 }
 
-.swap-gain {
-  color: var(--color-text-subtle);
+.gain {
   font-variant-numeric: tabular-nums;
   font-weight: var(--weight-semibold);
 }
 
-.swap-gain--up {
-  color: var(--color-success);
+.scout-table td.gain-col--top {
+  background: var(--color-warning-surface);
 }
 
-.swap-drop,
-.swap-none {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  white-space: nowrap;
+.scout-table tbody tr:hover > td.gain-col--top {
+  background: var(--color-warning-border);
+}
+
+.gain-col--top .gain,
+.player-gain--top {
+  color: var(--color-gold-strong);
+}
+
+/* A pickup the page could not price: his club has no night in the schedule. */
+.gain-unknown {
+  color: var(--color-text-subtle);
+}
+
+.player-gain {
+  display: none;
 }
 
 /* On a phone the projected ice time column goes, as in the planner; the group names shorten to
@@ -212,5 +224,35 @@
 @container (max-width: 38rem) {
   .group-since {
     display: none;
+  }
+
+  /* The gain column is off the screen on a phone, the far end of a sideways scroll, so the
+     figure rides as a line in the frozen player cell instead, labelled since its heading is gone. */
+  .scout-table .gain-col {
+    display: none;
+  }
+
+  .player-gain {
+    align-items: baseline;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-semibold);
+    gap: var(--space-1);
+    line-height: 1.4;
+  }
+
+  .player-gain--top {
+    background: var(--color-warning-surface);
+    margin-left: calc(-1 * var(--space-1));
+    padding: 0 var(--space-1);
+  }
+
+  .player-gain-label {
+    color: var(--color-text-muted);
+    font-weight: var(--weight-medium);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 }

@@ -2,7 +2,6 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { nhlTeamKey } from '../models/nhl-team';
 import { TeamPlayer } from '../services/player-scout.service';
 import { lineupSeats, Seat, seating } from '../streamer-planner/planner-lineup';
-import { ReserveMove, TeamRoom } from './drop-candidates';
 
 /**
  * What one of the user's players is worth to the lineup over the rest of the season.
@@ -49,17 +48,6 @@ export interface Pickup {
   /** His projection over the rest of the season, scored as the roster is. */
   readonly score: number;
 }
-
-/**
- * The pickup's best move into the lineup, and what the team gains over the rest of the season by
- * it: an open roster spot and an injured player moved to injured reserve cost nobody, so the gain
- * is what his starts add; a drop costs the dropped player's starts, so the gain is the lineup with
- * him and without the other, less the lineup as it stands.
- */
-export type LineupSwap =
-  | { readonly kind: 'open'; readonly gain: number }
-  | { readonly kind: 'reserve'; readonly move: ReserveMove; readonly gain: number }
-  | { readonly kind: 'drop'; readonly drop: TeamPlayer; readonly gain: number };
 
 function clubNights(
   teamAbbrev: string | undefined,
@@ -182,80 +170,72 @@ export function valueLineup(
   return { total, byPlayer };
 }
 
-/** The team's value with these players over these nights alone. */
-function valueOver(
-  players: readonly Seatable[],
-  dates: Iterable<string>,
-  seats: readonly Seat[],
-): number {
-  let total = 0;
-  for (const date of dates) {
-    total += night(players, date, seats).value;
-  }
-  return total;
+/** A pickup's worth against one drop, priced over the nights either of them plays. */
+export interface DropPricing {
+  /**
+   * What the lineup gains over the rest of the season by picking him up with the drop gone: the
+   * nights he plays with him seated and the drop out, plus the nights only the drop plays with
+   * the drop out, each less the lineup as it stands. Null when his club has no night in the
+   * schedule, since a player who plays nowhere by our reckoning is not worth nought.
+   */
+  gainFor(pickup: Pickup): number | null;
 }
 
 /**
- * A pickup's best move, and what the lineup gains by it over the rest of the season. An open
- * roster spot first, then the spot an injured player leaves for injured reserve: neither costs
- * anyone, so the gain is what his starts add. Otherwise the drop that leaves the lineup worth the
- * most with him in it: the player whose going costs least where the pickup plays, which a
- * lineup's seats decide rather than the projections alone. Null when the team has nobody of his
- * kind to drop, or nobody the model can weigh.
- *
- * @param room the roster's room without a drop ({@link TeamRoom})
+ * The lineup with one of the user's players dropped, ready to price every pickup against. The
+ * drop is the page's choice, not the model's: the lineup without him is set once for every
+ * night he plays, and each pickup then costs only the nights he plays himself. A drop who is out
+ * starts nowhere already, so dropping him costs the lineup nothing and a pickup gains his whole
+ * starts; the page says so beside his name rather than hiding him.
  */
-export function swapInto(
-  pickup: Pickup,
+export function priceDrop(
+  drop: TeamPlayer,
   team: readonly TeamPlayer[],
   slots: RosterSlots,
   schedule: ReadonlyMap<string, readonly string[]>,
   score: (playerId: string) => number | null,
-  room: TeamRoom,
-): LineupSwap | null {
+): DropPricing {
   const seats = lineupSeats(slots);
   const players = seatables(team, schedule, score);
-  const nights = clubNights(pickup.teamAbbrev, schedule);
-  const added: Seatable = {
-    playerId: pickup.playerId,
-    positions: pickup.positions,
-    perGame: nights.size === 0 ? 0 : pickup.score / nights.size,
-    nights,
-  };
-  if (room.openSpots > 0 || room.toReserve.length > 0) {
-    // Only the nights he plays change: the others seat the same lineup either way.
-    const gain = valueOver([...players, added], nights, seats) - valueOver(players, nights, seats);
-    return room.openSpots > 0
-      ? { kind: 'open', gain }
-      : { kind: 'reserve', move: room.toReserve[0], gain };
-  }
-  const moving = new Set(room.toReserve.map((move) => move.player.playerId));
-  const goalie = pickup.positions.includes('G');
-  const droppable = team.filter(
-    (player) =>
-      !player.reserve &&
-      !moving.has(player.playerId) &&
-      score(player.playerId) !== null &&
-      (player.type === 'goalie') === goalie,
-  );
-  let best: { readonly swap: LineupSwap; readonly dropScore: number } | null = null;
-  for (const drop of droppable) {
-    const without = players.filter((player) => player.playerId !== drop.playerId);
-    const dropped = players.find((player) => player.playerId === drop.playerId);
-    // The nights either of them plays are the only ones the swap moves.
-    const touched = new Set([...nights, ...(dropped?.nights ?? [])]);
-    const gain =
-      valueOver([...without, added], touched, seats) - valueOver(players, touched, seats);
-    const dropScore = score(drop.playerId) ?? 0;
-    // Two drops that leave the lineup equally well off: the one who projects less goes, since
-    // the other is the better player to keep on the bench for the night somebody is hurt.
-    if (
-      !best ||
-      gain > best.swap.gain + 1e-9 ||
-      (Math.abs(gain - best.swap.gain) <= 1e-9 && dropScore < best.dropScore)
-    ) {
-      best = { swap: { kind: 'drop', drop, gain }, dropScore };
+  const without = players.filter((player) => player.playerId !== drop.playerId);
+  const dropped = players.find((player) => player.playerId === drop.playerId);
+  const base = new Map<string, number>();
+  const asItStands = (date: string): number => {
+    let value = base.get(date);
+    if (value === undefined) {
+      value = night(players, date, seats).value;
+      base.set(date, value);
     }
+    return value;
+  };
+  // The nights only the drop plays lose what his seat was worth, the same for every pickup.
+  const dropNights = dropped?.nights ?? new Set<string>();
+  const lostWithout = new Map<string, number>();
+  for (const date of dropNights) {
+    lostWithout.set(date, night(without, date, seats).value - asItStands(date));
   }
-  return best?.swap ?? null;
+  return {
+    gainFor(pickup: Pickup): number | null {
+      const nights = clubNights(pickup.teamAbbrev, schedule);
+      if (nights.size === 0) {
+        return null;
+      }
+      const added: Seatable = {
+        playerId: pickup.playerId,
+        positions: pickup.positions,
+        perGame: pickup.score / nights.size,
+        nights,
+      };
+      let gain = 0;
+      for (const date of nights) {
+        gain += night([...without, added], date, seats).value - asItStands(date);
+      }
+      for (const [date, lost] of lostWithout) {
+        if (!nights.has(date)) {
+          gain += lost;
+        }
+      }
+      return gain;
+    },
+  };
 }
