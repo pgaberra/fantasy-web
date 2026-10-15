@@ -1,17 +1,6 @@
 <div class="draft-start">
   <div class="page-header">
     <h1>Draft Mode</h1>
-    <!--
-      `hasValue` before anything derived from the list: this line sits outside the error branch
-      below, and reading the resource's value while it is in an error state throws.
-    -->
-    <p class="subtitle">
-      @if (sourcesResource.hasValue() && drafts().length > 0) {
-        Pick up a draft, or start a new one.
-      } @else {
-        Pick what you want to draft against.
-      }
-    </p>
   </div>
 
   <!--
@@ -217,7 +206,7 @@
             @if (projections().length === 0) {
               <p class="group-empty">
                 No projections yet.
-                <a routerLink="/projections/new">Create one</a> to draft against your own rankings.
+                <a routerLink="/projections/new">Create one</a>
               </p>
             } @else {
               <ul class="rows">

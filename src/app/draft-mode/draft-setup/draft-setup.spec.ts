@@ -9,7 +9,6 @@ import { LeagueProjectionSettingsResponse } from '../../api/models/league-projec
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { FollowedLeague } from '../league-draft-follow';
-import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import {
@@ -780,14 +779,12 @@ describe('DraftSetupComponent', () => {
       expect(component.editableLeague().scoringType).toBe('category');
       expect(component.syncOn()).toBe(true);
       expect(asked).toEqual([{ platform: 'Yahoo', id: '465.l.9', name: 'Beer League' }]);
-      // The switch is named in a word, and what it does is left to its tip.
+      // The switch's name says what it does, so it carries no tip.
       const element: HTMLElement = fixture.nativeElement;
       expect(element.querySelector('.sync-title')?.textContent?.trim()).toBe(
         'Autosync draft picks',
       );
-      expect(ngMocks.findInstance(HelpTipComponent).text()).toBe(
-        'Automatically update this page with picks from your draft.',
-      );
+      expect(element.querySelector('.sync-row app-help-tip')).toBeNull();
       // Nothing is locked on a league nobody has heard from.
       expect(component.locked()).toBe(false);
       expect(component.numTeams()).toBe(10);

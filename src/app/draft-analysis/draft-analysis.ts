@@ -105,11 +105,6 @@ export class DraftAnalysisComponent implements OnInit {
   /** Whether to sell Premium here: wherever the grades did not come back. */
   readonly sellsPremium = computed(() => !!this.analysis() && !this.analysis()?.premium);
 
-  /** What a value is in, which the league's scoring decides. */
-  readonly valueUnit = computed(() =>
-    this.analysis()?.scoringType === 'category' ? 'z-scores' : 'fantasy points',
-  );
-
   readonly notDrafted = computed(() => {
     const analysis = this.analysis();
     return !!analysis && analysis.picks.length === 0;

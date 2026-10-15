@@ -256,7 +256,7 @@ describe('DraftAnalysisComponent', () => {
     await choose(fixture, '465.l.1');
 
     expect(fixture.nativeElement.querySelector('.analysis-source').textContent).toContain(
-      'current SlapStat AI projection',
+      'current AI projection',
     );
   });
 
