@@ -181,7 +181,7 @@
                         </span>
                         @if (drop(); as drop) {
                           <!-- The drop as a choice of a few: the cheapest first and chosen, the next
-                               cheapest beside him, and the whole roster behind Other. Pressing one
+                               cheapest beside him, and the whole roster behind Someone else. Pressing one
                                re-prices the list in place. -->
                           <div class="drop-chips" role="radiogroup" aria-label="The player to drop">
                             @for (chip of dropChips(); track chip.player.playerId) {
@@ -210,7 +210,7 @@
                               [attr.aria-expanded]="rosterOpen()"
                               (click)="openRoster()"
                             >
-                              Other…
+                              Someone else
                             </button>
                           </div>
                         }

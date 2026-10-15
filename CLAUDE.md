@@ -428,7 +428,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   2026-10-15, after an Impeccable critique found the old Swap column naming the same drop on
   nearly every row): with a full roster the room line offers the four cheapest holders of a
   roster spot as chips, the cheapest pressed (computed from the fetched roster, never assumed),
-  and "Other..." unfolds the roster where any holder can be picked; `priceDrop` then prices every
+  and "Someone else" unfolds the roster where any holder can be picked; `priceDrop` then prices every
   available player in the filtered list against that one drop, so the "Gain if you drop
   <surname>" column sorts, and the three biggest gains wear the gold wash. A player who is out is
   kept off the chips, since his empty seat makes him cheapest by our reckoning; picked, he reads

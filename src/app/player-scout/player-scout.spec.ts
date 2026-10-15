@@ -514,7 +514,7 @@ describe('PlayerScoutComponent', () => {
       'false',
       'false',
     ]);
-    expect(ngMocks.formatText(ngMocks.find(fixture, '.pill--other'))).toBe('Other…');
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.pill--other'))).toBe('Someone else');
     // He starts every night, so his cost is his line: nothing to explain.
     expect(page.dropWhy()).toBeNull();
     expect(ngMocks.formatText(ngMocks.find(fixture, '.room-caption'))).toContain(
@@ -574,7 +574,7 @@ describe('PlayerScoutComponent', () => {
     const table = ngMocks.find(fixture, ScoutTableComponent);
     expect(ngMocks.input(table, 'dropName')).toBe('202');
 
-    // Other... unfolds the whole roster, and any row of it can be the drop.
+    // Someone else unfolds the whole roster, and any row of it can be the drop.
     ngMocks.click(ngMocks.find(fixture, '.pill--other'));
     fixture.detectChanges();
     expect(page.rosterOpen()).toBe(true);
