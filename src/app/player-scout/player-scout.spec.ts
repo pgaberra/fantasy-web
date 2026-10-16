@@ -491,46 +491,44 @@ describe('PlayerScoutComponent', () => {
     expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('opens on the list, with the roster folded under a line offering the cheapest drops, the cheapest chosen', async () => {
+  it('opens on suggested drops, unfolded, with nobody chosen and no gain column', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(page.rosterOpen()).toBe(false);
+    expect(page.rosterOpen()).toBe(true);
     // Everyone with a seat starts every night, so the cheapest is the lowest scorer who holds a
     // spot: the C on injured reserve scores lowest but holds none.
-    expect(page.cheapest()?.player.playerId).toBe('203');
-    expect(page.drop()).toBe(page.cheapest());
+    expect(page.dropCandidates()[0]?.player.playerId).toBe('203');
+    expect(page.drop()).toBeNull();
+    expect(page.gains()).toBeNull();
+    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'gains')).toBeNull();
     expect(page.valuation()?.byPlayer.get('203')?.starts).toBe(10);
     const floor = ngMocks.find(fixture, '.floor');
-    expect(ngMocks.formatText(floor)).toContain('Full roster. If you drop');
+    expect(ngMocks.formatText(floor)).toContain('Suggested drops');
     const chips = ngMocks.findAll(fixture, '.pill--drop');
     const chipText = (selector: string) =>
       chips.map((chip) => ngMocks.formatText(ngMocks.find(chip, selector)));
     expect(chipText('.pill-name')).toEqual(['Mine 203', 'Mine 202', 'Mine 210', 'Mine 207']);
     expect(chipText('.pill-cost')).toEqual(['5.0', '7.0', '11.0', '70.0']);
     expect(chips.map((chip) => chip.attributes['aria-checked'])).toEqual([
-      'true',
+      'false',
       'false',
       'false',
       'false',
     ]);
     expect(ngMocks.formatText(ngMocks.find(fixture, '.pill--other'))).toBe('Someone else');
-    // He starts every night, so his cost is his line: nothing to explain.
-    expect(page.dropWhy()).toBeNull();
-    expect(ngMocks.formatText(ngMocks.find(fixture, '.room-caption'))).toContain(
-      'Cost and gain are what your lineup loses or gains',
-    );
+    expect(ngMocks.findAll(fixture, '.room-caption')).toHaveLength(0);
     const toggle = ngMocks.find(fixture, '.roster-toggle');
     expect(ngMocks.formatText(toggle)).toBe('Your players (12)');
-    expect(toggle.attributes['aria-expanded']).toBe('false');
+    expect(toggle.attributes['aria-expanded']).toBe('true');
+    ngMocks.click(toggle);
+    fixture.detectChanges();
+    expect(page.rosterOpen()).toBe(false);
   });
 
-  it('unfolds the roster to the few a drop would be, the chosen one marked, and the rest on request', async () => {
+  it('unfolds the roster to the few a drop would be, none chosen, and the rest on request', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
-
-    ngMocks.click(ngMocks.find(fixture, '.roster-toggle'));
-    fixture.detectChanges();
 
     expect(ngMocks.find(fixture, '.roster-toggle').attributes['aria-expanded']).toBe('true');
     const order = page.roster().map((entry) => entry.player.playerId);
@@ -539,13 +537,13 @@ describe('PlayerScoutComponent', () => {
     let rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
     expect(rows).toHaveLength(4);
     expect(ngMocks.formatText(rows[0])).toContain('10 / 10');
-    expect(rows[0].nativeElement.classList).toContain('roster-row--drop');
-    expect(ngMocks.find(rows[0], 'input[type=radio]').properties['checked']).toBe(true);
+    expect(rows[0].nativeElement.classList).not.toContain('roster-row--drop');
+    expect(ngMocks.find(rows[0], 'input[type=radio]').properties['checked']).toBe(false);
     // No comparison on: no Change column in the roster either.
     const headings = ngMocks
       .findAll(fixture, '.roster-table thead th')
       .map((th) => ngMocks.formatText(th));
-    expect(headings).toEqual(['Player', 'Slot', 'Proj.', 'Starts', 'Lineup cost']);
+    expect(headings).toEqual(['Player', 'Proj.', 'Starts', 'Lineup cost']);
 
     const more = ngMocks.find(fixture, '.roster-more');
     expect(ngMocks.formatText(more)).toBe('Show all 12');
@@ -587,9 +585,14 @@ describe('PlayerScoutComponent', () => {
     // A fifth chip, since he is none of the four cheapest.
     expect(ngMocks.findAll(fixture, '.pill--drop')).toHaveLength(5);
 
-    // A pick that is not on the roster, as after a league change, falls back to the cheapest.
+    // Pressing the one picked lets him go, and the gain column with him.
+    page.pickDrop('201');
+    expect(page.drop()).toBeNull();
+    expect(page.gains()).toBeNull();
+
+    // A pick that is not on the roster, as after a league change, chooses nobody.
     page.pickDrop('nobody');
-    expect(page.drop()?.player.playerId).toBe('203');
+    expect(page.drop()).toBeNull();
   });
 
   it('names the player whose going costs the lineup least, not the lowest scorer, and prices every pickup against him', async () => {
@@ -631,10 +634,10 @@ describe('PlayerScoutComponent', () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(page.cheapest()?.player.playerId).toBe('403');
+    expect(page.dropCandidates()[0]?.player.playerId).toBe('403');
     expect(page.valuation()?.byPlayer.get('403')?.marginal).toBe(0);
     expect(page.valuation()?.byPlayer.get('404')?.marginal).toBe(20);
-    expect(page.dropWhy()).toBe('Starts 0 of 10 nights behind 401 and 402.');
+    page.pickDrop('403');
     // The available D replaces the lone D for a gain; the available C cannot start, so dropping
     // the benched centre for him gains nothing.
     expect(page.gains()?.get('99')).toBeCloseTo(30);
@@ -643,7 +646,6 @@ describe('PlayerScoutComponent', () => {
     // Dropping the lone defenceman instead: the D pickup nets his 50 less the 20 lost; the C
     // pickup still cannot start and the D seat stands empty.
     page.pickDrop('404');
-    expect(page.dropWhy()).toBeNull();
     expect(page.gains()?.get('99')).toBeCloseTo(30);
     expect(page.gains()?.get('98')).toBeCloseTo(-20);
   });
@@ -653,6 +655,8 @@ describe('PlayerScoutComponent', () => {
     const page = fixture.point.componentInstance;
 
     page.pool.set('all');
+    expect(page.gains()).toBeNull();
+    page.pickDrop('203');
     // Two pages, every available player priced whether on screen or not.
     expect(page.pageCount()).toBe(2);
     expect(page.gains()?.size).toBe(23);
@@ -681,11 +685,10 @@ describe('PlayerScoutComponent', () => {
     expect(page.fullRoster()).toBe(false);
     expect(page.gains()).toBeNull();
     expect(ngMocks.findAll(fixture, '.pill--drop')).toHaveLength(0);
-    expect(ngMocks.findAll(fixture, '.room-caption')).toHaveLength(0);
     expect(ngMocks.formatText(fixture)).toContain('1 open roster spot');
   });
 
-  it('keeps a player who is out off the chips, and prices him at nothing while out once picked', async () => {
+  it('keeps a player who is out off the chips, and prices him at the nights he plays once back', async () => {
     const answer = team();
     myTeam.mockReturnValue(
       of({
@@ -701,8 +704,8 @@ describe('PlayerScoutComponent', () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    // His seat is empty already, so he would be cheapest by our reckoning; the chips skip him.
-    expect(page.cheapest()?.player.playerId).toBe('202');
+    // The chips suggest the healthy; he can still be picked.
+    expect(page.dropCandidates()[0]?.player.playerId).toBe('202');
     expect(page.dropChips().map((chip) => chip.player.playerId)).toEqual([
       '202',
       '210',
@@ -717,7 +720,7 @@ describe('PlayerScoutComponent', () => {
       .findAll(fixture, '.pill--drop')
       .find((chip) => chip.attributes['aria-checked'] === 'true')!;
     expect(ngMocks.formatText(ngMocks.find(chosen, '.pill-name'))).toBe('Mine 203');
-    expect(ngMocks.formatText(ngMocks.find(chosen, '.pill-cost'))).toBe('0.0 while out');
+    expect(ngMocks.formatText(ngMocks.find(chosen, '.pill-cost'))).toBe('5.0');
     expect(ngMocks.formatText(ngMocks.find(chosen, '.drop-tag--out'))).toBe('O');
   });
 

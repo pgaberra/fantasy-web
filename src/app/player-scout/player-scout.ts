@@ -546,11 +546,6 @@ export class PlayerScoutComponent {
     return answer?.schedule ?? new Map();
   });
 
-  readonly teamName = computed(() => {
-    const answer = this.teamResource.hasValue() ? this.teamResource.value() : null;
-    return answer?.team.teamName ?? null;
-  });
-
   readonly teamStatus = computed<'loading' | 'error' | 'not-found' | 'ready'>(() => {
     if (this.teamResource.error()) {
       return 'error';
@@ -649,8 +644,8 @@ export class PlayerScoutComponent {
 
   /**
    * Whether he can be the drop: he holds a roster spot, the model has a line for him, and his
-   * place in the lineup could be weighed. A player who is out qualifies, priced at what his
-   * empty seat costs, which is nought; the chips leave him out and the fold-out says so.
+   * place in the lineup could be weighed. A player who is out qualifies, priced at the nights he
+   * plays once back; the chips leave him out, and the fold-out offers him.
    */
   canDrop(entry: RosterEntry): boolean {
     return !entry.player.reserve && entry.score !== null && entry.weighed;
@@ -658,32 +653,32 @@ export class PlayerScoutComponent {
 
   /**
    * The players a drop would usually be: those holding a spot the model can weigh and who are
-   * not out, the one whose going costs the lineup least first. An out player's seat is empty
-   * already, so he is cheapest by our reckoning however good he is; he can still be picked.
+   * not out, the one whose going costs the lineup least first.
    */
   readonly dropCandidates = computed<readonly RosterEntry[]>(() =>
     this.roster().filter((entry) => this.canDrop(entry) && !entry.player.out),
   );
 
-  /** The player to drop unless the reader picks another: the cheapest candidate. */
-  readonly cheapest = computed<RosterEntry | null>(() => this.dropCandidates()[0] ?? null);
-
-  /** The drop the reader picked, by platform id, or null for the cheapest; forgotten with the league. */
+  /** The drop the reader picked, by platform id; none until he picks, and forgotten with the league. */
   private readonly dropPicked = linkedSignal<unknown, string | null>({
     source: () => this.league(),
     computation: () => null,
   });
 
-  /** The drop every pickup is priced against: the one picked while he can still be, else the cheapest. */
+  /**
+   * The drop every pickup is priced against: the one picked while he can still be. Nobody is
+   * chosen for the reader, so with none picked the list carries no gain column.
+   */
   readonly drop = computed<RosterEntry | null>(() => {
     const picked = this.dropPicked();
     const entry =
       picked === null ? undefined : this.roster().find((row) => row.player.playerId === picked);
-    return entry && this.canDrop(entry) ? entry : this.cheapest();
+    return entry && this.canDrop(entry) ? entry : null;
   });
 
+  /** Picks him as the drop, or lets him go again when he is the one picked. */
   pickDrop(playerId: string): void {
-    this.dropPicked.set(playerId);
+    this.dropPicked.update((picked) => (picked === playerId ? null : playerId));
   }
 
   /** The chips on the room line: the four cheapest candidates, and the drop picked if he is another. */
@@ -704,43 +699,18 @@ export class PlayerScoutComponent {
   /** The chosen drop's surname, for the gain column's heading: "Gain if you drop Hughes". */
   readonly dropSurname = computed(() => surname(this.drop()?.player.name ?? ''));
 
-  /**
-   * Why the chosen drop is cheap when it is his seat rather than his line: "Starts 48 of 73
-   * nights behind McDavid and MacKinnon." Nothing when he starts every night his club plays,
-   * since then his cost is his projection and the figure says so itself.
-   */
-  readonly dropWhy = computed<string | null>(() => {
-    const drop = this.drop();
-    const value = drop?.value ?? null;
-    if (!drop || !value || drop.player.out || value.starts >= value.games) {
-      return null;
-    }
-    const ahead = this.roster()
-      .filter(
-        (entry) =>
-          entry !== drop &&
-          !entry.player.reserve &&
-          !entry.player.out &&
-          (entry.value?.starts ?? 0) > value.starts &&
-          entry.player.positions.some((position) => drop.player.positions.includes(position)),
-      )
-      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-      .slice(0, 2)
-      .map((entry) => surname(entry.player.name));
-    const starts = `Starts ${value.starts} of ${value.games} nights`;
-    return ahead.length > 0 ? `${starts} behind ${ahead.join(' and ')}.` : `${starts}.`;
-  });
-
-  /** "0.0 while out", "143.1": what his going costs the lineup, as his chip and his row say it. */
+  /** "143.1": what his going costs the lineup, as his chip and his row say it. */
   dropCost(entry: RosterEntry): string {
-    const cost = this.formatScore(entry.value?.marginal ?? null);
-    return entry.player.out ? `${cost} while out` : cost;
+    return this.formatScore(entry.value?.marginal ?? null);
   }
 
-  /** Whether the roster is unfolded under the room line; folded on every visit and league. */
-  readonly rosterOpen = linkedSignal<unknown, boolean>({
-    source: () => this.league(),
-    computation: () => false,
+  /**
+   * Whether the roster is unfolded under the room line: open on a full roster, where it lists the
+   * suggested drops, folded otherwise; set afresh with the league.
+   */
+  readonly rosterOpen = linkedSignal<boolean, boolean>({
+    source: () => this.fullRoster(),
+    computation: (full) => full,
   });
 
   toggleRoster(): void {
