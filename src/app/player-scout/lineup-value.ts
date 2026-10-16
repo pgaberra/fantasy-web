@@ -16,7 +16,8 @@ export interface LineupValue {
   readonly playerId: string;
   /** Nights he starts in the lineup over the rest of the season, with the best lineup set each night. */
   readonly starts: number;
-  /** Nights his club plays that he could play: not out, and the club's schedule known. */
+  /** Nights his club plays that he could play: those after his return when out, and the club's
+   * schedule known. */
   readonly games: number;
   /** His value over the nights he starts: his projection a game, times the starts. */
   readonly value: number;
@@ -57,9 +58,23 @@ function clubNights(
 }
 
 /**
- * The user's players as the nights seat them. A player who is out, or whose club the schedule
- * does not know, plays nowhere; one the model has no line for plays for nothing, and takes a seat
- * only after everyone with a line, as a manager would seat him.
+ * The nights a player who is out plays once he is back: the last of his club's nights, as many as
+ * the model gives him games. The projection run takes the games he is expected to miss off his
+ * season, so its games are the ones after his return; none when the model has no line for him.
+ */
+function nightsBack(player: TeamPlayer, nights: ReadonlySet<string>): ReadonlySet<string> {
+  const games = Math.round(player.projection?.stats.utility.gp ?? 0);
+  if (games <= 0) {
+    return new Set();
+  }
+  return new Set([...nights].sort((a, b) => a.localeCompare(b)).slice(-games));
+}
+
+/**
+ * The user's players as the nights seat them. A player who is out, on injured reserve or not,
+ * plays the nights after his return and takes a seat from the healthy then; one whose club the
+ * schedule does not know plays nowhere; one the model has no line for plays for nothing, and
+ * takes a seat only after everyone with a line, as a manager would seat him.
  */
 function seatables(
   team: readonly TeamPlayer[],
@@ -67,9 +82,10 @@ function seatables(
   score: (playerId: string) => number | null,
 ): Seatable[] {
   return team
-    .filter((player) => !player.out && player.positions.length > 0)
+    .filter((player) => player.positions.length > 0)
     .map((player) => {
-      const nights = clubNights(player.teamAbbrev, schedule);
+      const club = clubNights(player.teamAbbrev, schedule);
+      const nights = player.out ? nightsBack(player, club) : club;
       const total = score(player.playerId);
       return {
         playerId: player.playerId,
@@ -185,8 +201,7 @@ export interface DropPricing {
  * The lineup with one of the user's players dropped, ready to price every pickup against. The
  * drop is the page's choice, not the model's: the lineup without him is set once for every
  * night he plays, and each pickup then costs only the nights he plays himself. A drop who is out
- * starts nowhere already, so dropping him costs the lineup nothing and a pickup gains his whole
- * starts; the page says so beside his name rather than hiding him.
+ * costs only the nights he plays once back.
  */
 export function priceDrop(
   drop: TeamPlayer,

@@ -476,20 +476,6 @@ select:focus-visible,
   padding: 3px var(--space-3);
 }
 
-/* Under the line: why the chosen drop is cheap when it is his seat, then what the figures are. */
-.room-caption {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  margin: var(--space-1) 0 0;
-  padding-left: calc(14px + var(--space-2));
-}
-
-.drop-why {
-  color: var(--color-text);
-  font-weight: var(--weight-medium);
-  margin-right: var(--space-1);
-}
-
 .roster-toggle {
   align-items: center;
   background: none;
@@ -572,11 +558,6 @@ select:focus-visible,
 .roster-table .num {
   font-variant-numeric: tabular-nums;
   text-align: right;
-}
-
-.roster-table .slot {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
 }
 
 /* The drop chosen: the row the eye should land on first. */
