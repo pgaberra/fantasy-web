@@ -571,16 +571,25 @@
     flex-basis: 100%;
   }
 
-  /* The switch spans the page, each half a thumb-sized target. */
+  /* The switch spans the page, a third each and a thumb-sized target. The icon sits over the
+     label rather than beside it: beside, "Team Schedules" wrapped to two lines in its third
+     while "My Roster" kept one, so the three read as three different controls. Stacked, every
+     label is one line at the small size, and the three are the same height and shape. */
   .views {
     align-self: stretch;
   }
 
   .view {
-    flex: 1;
+    flex: 1 1 0;
+    flex-direction: column;
+    font-size: var(--text-xs);
+    gap: 2px;
     justify-content: center;
-    min-height: 44px;
-    padding: 0 var(--space-2);
+    line-height: 1.2;
+    min-height: 48px;
+    min-width: 0;
+    padding: var(--space-1) var(--space-2);
+    white-space: nowrap;
   }
 
   /* From and To side by side, label over field: read as one range, aligned whatever the
