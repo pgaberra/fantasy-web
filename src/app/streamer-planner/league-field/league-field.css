@@ -35,6 +35,22 @@
   padding: var(--space-2);
 }
 
+/* No league yet: nothing on the page can be shown until one is picked, so the dropdown is the
+   next step and says so, in the accent with a soft ring, rather than sitting in the same grey as
+   every settled control. The ring is a shadow, so marking and unmarking it moves nothing. */
+.field-select--unset {
+  background-color: var(--color-accent-surface);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgb(28 98 235 / 18%);
+  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+}
+
+.field-select--unset option {
+  color: var(--color-text);
+  font-weight: normal;
+}
+
 .field-select:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;

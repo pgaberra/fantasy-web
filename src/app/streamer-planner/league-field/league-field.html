@@ -20,6 +20,7 @@
       @if (picker.leagues().length > 0) {
         <select
           class="field-select"
+          [class.field-select--unset]="!picker.selectedKey()"
           aria-labelledby="planner-league-label"
           (change)="picker.select($event)"
         >

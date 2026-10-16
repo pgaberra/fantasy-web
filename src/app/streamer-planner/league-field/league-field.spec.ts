@@ -91,6 +91,18 @@ describe('LeagueFieldComponent', () => {
     expect(fixture.point.nativeElement.classList).toContain('league-field--inline');
   });
 
+  it('marks the dropdown out as the next step until a league is picked', async () => {
+    const fixture = await render();
+    const select = fixture.nativeElement.querySelector('.field-select') as HTMLSelectElement;
+    expect(select.classList).toContain('field-select--unset');
+
+    select.value = '465.l.2';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(select.classList).not.toContain('field-select--unset');
+  });
+
   it('opens on the league last chosen anywhere', async () => {
     remember({ platform: 'YAHOO', leagueId: '465.l.9', name: 'The Gordie Howes' });
     const fixture = await render();

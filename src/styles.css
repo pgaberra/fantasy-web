@@ -67,6 +67,8 @@
   /* Darkened from #1e6bff, which read 4.1:1 on --color-bg -- under the 4.5:1 WCAG 1.4.3 asks
      of the links and emphasis drawn in it. The fills it also draws carry no text. */
   --color-accent: #1c62eb;
+  /* The pale wash behind a control that is the next step, under accent ink: 4.8:1 on it. */
+  --color-accent-surface: #eef4ff;
   --color-gold: #e6b84a;
   /* Darkened from #c8860a, which was failing at both ends of its job: 3.1:1 as text on a light
      surface, and 3.1:1 under the white text of the rookie badge and the summary points column.
