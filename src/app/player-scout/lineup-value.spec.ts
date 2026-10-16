@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RosterSlots } from '../api/models/roster-slots';
+import { Projection } from '../models/projection.model';
 import { TeamPlayer } from '../services/player-scout.service';
 import { priceDrop, valueLineup } from './lineup-value';
 
@@ -104,7 +105,29 @@ describe('valueLineup', () => {
     expect(valuation.byPlayer.get('d2')?.marginal).toBeCloseTo(20);
   });
 
-  it('starts nobody who is out, on a club with no schedule, or eligible nowhere', () => {
+  it('seats a player out injured on the nights after his return, ahead of the healthy', () => {
+    // The model gives the injured defenceman 4 of the club's 10 games: the last four.
+    const back = {
+      type: 'skater',
+      playerId: 0,
+      stats: { scoring: {}, utility: { gp: 4 } },
+    } as unknown as Projection;
+    const team = [
+      player('d1', ['D']),
+      player('d2', ['D']),
+      player('ir', ['D'], 'EDM', { out: true, reserve: true, projection: back }),
+    ];
+    const scores: Record<string, number> = { d1: 40, d2: 30, ir: 80 };
+    const valuation = valueLineup(team, SLOTS, schedule({ EDM: NIGHTS }), (id) => scores[id]);
+
+    expect(valuation.byPlayer.get('ir')).toMatchObject({ starts: 4, games: 4 });
+    // At 20 a game he takes the one defence seat from d1 (4 a game) for the last four nights.
+    expect(valuation.byPlayer.get('d1')?.starts).toBe(6);
+    expect(valuation.byPlayer.get('d2')?.starts).toBe(0);
+    expect(valuation.byPlayer.get('ir')?.marginal).toBeCloseTo(4 * (20 - 4));
+  });
+
+  it('starts nobody who is out with no line, on a club with no schedule, or eligible nowhere', () => {
     const team = [
       player('out', ['C'], 'EDM', { out: true }),
       player('lost', ['C'], 'XXX'),
@@ -191,7 +214,7 @@ describe('priceDrop', () => {
     expect(pricing.gainFor(pickup(['C'], 90, 'XXX'))).toBeNull();
   });
 
-  it('prices a drop who is out as costing nothing: his seat is empty already', () => {
+  it('prices a drop who is out with no line as costing nothing: he is back for no game', () => {
     const hurt = player('hurt', ['LW'], 'EDM', { out: true });
     const pricing = priceDrop(hurt, [...team, hurt], SLOTS, nights, (id) =>
       id === 'hurt' ? 90 : score(id),

@@ -170,27 +170,24 @@
                       <app-icon name="user-minus" [size]="14" />
                       <div class="floor-body">
                         <span class="floor-lead">
-                          @if (slotsKnown()) {
-                            Full roster.
-                          }
-                          @if (drop()) {
-                            If you drop
+                          @if (dropCandidates().length > 0) {
+                            Suggested drops
                           } @else {
-                            None of your {{ shown() }} has a projection.
+                            Suggested drops: none of your {{ shown() }} has a projection.
                           }
                         </span>
-                        @if (drop(); as drop) {
-                          <!-- The drop as a choice of a few: the cheapest first and chosen, the next
-                               cheapest beside him, and the whole roster behind Someone else. Pressing one
-                               re-prices the list in place. -->
+                        @if (dropCandidates().length > 0) {
+                          <!-- The drop as a choice of a few, the cheapest first, and the whole roster
+                               behind Someone else. None is chosen until the reader presses one, which
+                               prices the list against him; pressing him again lets him go. -->
                           <div class="drop-chips" role="radiogroup" aria-label="The player to drop">
                             @for (chip of dropChips(); track chip.player.playerId) {
                               <button
                                 type="button"
                                 class="pill pill--drop"
                                 role="radio"
-                                [class.pill--active]="chip === drop"
-                                [attr.aria-checked]="chip === drop"
+                                [class.pill--active]="chip === drop()"
+                                [attr.aria-checked]="chip === drop()"
                                 (click)="pickDrop(chip.player.playerId)"
                               >
                                 <span class="pill-name">{{ chip.player.name }}</span>
@@ -234,29 +231,11 @@
             }
           </div>
 
-          @if (fullRoster() && drop()) {
-            <!-- Written out rather than left to a tooltip, since a phone shows none: why the chosen
-                 drop is cheap when it is his seat, and what the costs and gains are figures of. -->
-            <p class="room-caption">
-              @if (dropWhy(); as why) {
-                <span class="drop-why">{{ why }}</span>
-              }
-              Cost and gain are what your lineup loses or gains over the rest of the season, with
-              every night's starters set.
-            </p>
-          }
-
           @if (teamStatus() === 'ready' && rosterOpen()) {
             <div id="scout-roster" class="roster">
-              <p class="roster-caption">
-                @if (teamName(); as name) {
-                  {{ name }},
-                }
-                the cheapest to drop first.
-                @if (rosterUnweighed()) {
-                  A ? is a club whose nights the schedule lacks.
-                }
-              </p>
+              @if (rosterUnweighed()) {
+                <p class="roster-caption">A ? is a club whose nights the schedule lacks.</p>
+              }
               @if (roster().length === 0) {
                 <p class="room-note">None of your {{ shown() }} is on the roster.</p>
               } @else {
@@ -265,7 +244,6 @@
                     <thead>
                       <tr>
                         <th scope="col">Player</th>
-                        <th scope="col" class="num roster-col--wide">Slot</th>
                         <th
                           scope="col"
                           class="num roster-col--wide"
@@ -293,7 +271,7 @@
                         <tr [class.roster-row--drop]="entry === drop()">
                           <td>
                             <!-- With a full roster, any player who holds a spot can be the drop. -->
-                            @if (fullRoster() && drop()) {
+                            @if (fullRoster() && dropCandidates().length > 0) {
                               <label class="drop-player drop-pick">
                                 <input
                                   type="radio"
@@ -363,7 +341,6 @@
         </ng-template>
 
         <ng-template #figures let-entry="entry">
-          <td class="num slot roster-col--wide">{{ entry.player.slot ?? '' }}</td>
           <td class="num drop-score roster-col--wide">{{ formatScore(entry.score) }}</td>
           @if (compare()) {
             <td
