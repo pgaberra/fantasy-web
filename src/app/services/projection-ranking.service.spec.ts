@@ -80,6 +80,22 @@ describe('ProjectionRankingService', () => {
       );
     });
 
+    it('ranks a goalie with no games after every goalie who plays, however badly', () => {
+      const out = goalieSeason(5, 0, 0, 0, 0);
+      const poor = goalieSeason(6, 20, 3.4, 0.885, 7);
+      const rankingInput = { ...input('category', categories), projections: [...FIELD, out, poor] };
+
+      const ranked = getService().rankOverall(rankingInput);
+
+      const byId = new Map(ranked.map((scored) => [scored.projection.playerId, scored]));
+      // On score alone the empty line wins: its ratios sit at the pool's average.
+      expect(byId.get(out.playerId)!.score.zScore).toBeGreaterThan(
+        byId.get(poor.playerId)!.score.zScore,
+      );
+      expect(ranked.map((scored) => scored.projection.playerId).at(-1)).toBe(out.playerId);
+      expect(byId.get(out.playerId)!.qualified).toBe(false);
+    });
+
     it("breaks each player's ranked z-score into categories that sum back to it", () => {
       const service = getService();
       const rankingInput = input('category', categories);

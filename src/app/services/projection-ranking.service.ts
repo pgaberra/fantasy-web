@@ -158,10 +158,18 @@ export class ProjectionRankingService {
     return { ...projection, stats: { ...projection.stats, scoring } };
   }
 
+  /**
+   * Whether a category league's goalie ranks among the goalies who count: his games at least the
+   * league's minimum, and above none whatever the minimum. A goalie with no games has no minutes to
+   * move a team's GAA or save percentage, so his ratios score the pool's average, while one who
+   * plays at a rate below the pool's scores under it: ranked on score alone, a goalie out for the
+   * season would rank above every goalie who plays below average.
+   */
   private isQualified(projection: Projection, isCategory: boolean, minGames: number): boolean {
     if (!isCategory || projection.type !== 'goalie') {
       return true;
     }
-    return projection.stats.utility.gp >= minGames;
+    const games = projection.stats.utility.gp;
+    return games > 0 && games >= minGames;
   }
 }
