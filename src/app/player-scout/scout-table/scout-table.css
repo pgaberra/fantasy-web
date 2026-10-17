@@ -200,7 +200,10 @@
    the drop, "vs Silovs", and is inked like its neighbours: gold on a heading would claim the
    column decides, when gold marks a figure. The figure is green up, red down and quiet at nothing,
    as every other change on the page is, and the three biggest gains among everyone priced wear
-   the gold wash behind it, since gold marks the figure that decides. */
+   a green wash behind it, the ink's own tint, so they read as the most green and not, as the
+   warning yellow had them, as the three to be careful of. The wash earns its keep in the default
+   order by score, where the best gains lie scattered; sorted by the column they are the first
+   three rows anyway. */
 .scout-table .gain-col {
   min-width: 6rem;
 }
@@ -224,11 +227,11 @@
 }
 
 .scout-table td.gain-col--top {
-  background: var(--color-warning-surface);
+  background: var(--color-success-surface);
 }
 
 .scout-table tbody tr:hover > td.gain-col--top {
-  background: var(--color-warning-border);
+  background: var(--color-success-border);
 }
 
 /* A pickup the page could not price: his club has no night in the schedule. */
@@ -265,7 +268,7 @@
   }
 
   .player-gain--top {
-    background: var(--color-warning-surface);
+    background: var(--color-success-surface);
     margin-left: calc(-1 * var(--space-1));
     padding: 0 var(--space-1);
   }
