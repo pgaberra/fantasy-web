@@ -404,7 +404,7 @@ describe('ScoutTableComponent', () => {
     ).not.toContain('Gain');
   });
 
-  it('heads a sortable gain column by the drop, each gain inked by its sign, the three biggest washed in gold and a pickup it could not price as a question', () => {
+  it('heads a sortable gain column by the drop, each gain inked by its sign, the three biggest washed in green and a pickup it could not price as a question', () => {
     const sortBy = vi.fn();
     const fixture = MockRender(ScoutTableComponent, {
       rows: [

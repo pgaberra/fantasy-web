@@ -56,7 +56,7 @@ interface ScoutEntry {
 /** A minute a game more ice than the chosen day's line gave him: a role, not a rounding. */
 const MORE_ICE_SECONDS = 60;
 
-/** The gains that wear the gold: the medal on the best pickups, as the planner's list gives three. */
+/** The gains that wear the wash: the medal on the best pickups, as the planner's list gives three. */
 export const TOP_GAINS = 3;
 
 /**
@@ -97,7 +97,7 @@ export class ScoutTableComponent {
   readonly gaining = computed(() => this.view() === 'projection' && this.gains() !== null);
 
   /**
-   * The three pickups the lineup gains the most by, among every one the page priced: the gold
+   * The three pickups the lineup gains the most by, among every one the page priced: the wash
    * goes with the figure, not the row, so a page of the list whose best gain is fourth shows none.
    * A gain of nothing or less decides nothing, and wears none.
    */
