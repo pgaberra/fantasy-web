@@ -346,9 +346,10 @@ select:focus-visible,
 
 /* What a pickup costs, in one line between the filters and the list: the room the roster has, or
    the player whose going costs the lineup least. The roster itself unfolds under the line, so the
-   list stays the first thing on the page. */
+   list stays the first thing on the page. White like the card, not a grey well: the drop chips
+   are themselves grey, and on a grey box only their border was left of them. */
 .room-box {
-  background: var(--color-surface-alt);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   margin-top: var(--space-4);
@@ -560,9 +561,9 @@ select:focus-visible,
   text-align: right;
 }
 
-/* The drop chosen: the row the eye should land on first. */
+/* The drop chosen: the row the eye should land on first, washed in the radio's own blue. */
 .roster-row--drop td {
-  background: var(--color-surface);
+  background: var(--color-accent-surface);
 }
 
 /* The pick is the whole of the player cell, radio first, as the draft sources are picked. */
