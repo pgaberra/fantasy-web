@@ -178,7 +178,7 @@
                         </span>
                         @if (dropCandidates().length > 0) {
                           <!-- The drop as a choice of a few, the cheapest first, and the whole roster
-                               behind Someone else. None is chosen until the reader presses one, which
+                               behind Show all. None is chosen until the reader presses one, which
                                prices the list against him; pressing him again lets him go. -->
                           <div class="drop-chips" role="radiogroup" aria-label="The player to drop">
                             @for (chip of dropChips(); track chip.player.playerId) {
@@ -200,15 +200,6 @@
                                 <span class="pill-cost">{{ dropCost(chip) }}</span>
                               </button>
                             }
-                            <button
-                              type="button"
-                              class="pill pill--other"
-                              aria-controls="scout-roster"
-                              [attr.aria-expanded]="rosterOpen()"
-                              (click)="openRoster()"
-                            >
-                              Someone else
-                            </button>
                           </div>
                         }
                       </div>
@@ -225,7 +216,7 @@
                 [attr.aria-expanded]="rosterOpen()"
                 (click)="toggleRoster()"
               >
-                Your {{ shown() }} ({{ roster().length }})
+                Show all ({{ roster().length }})
                 <app-icon class="chevron" name="chevron-down" [size]="14" />
               </button>
             }
