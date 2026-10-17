@@ -491,11 +491,12 @@ describe('PlayerScoutComponent', () => {
     expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('opens on suggested drops, unfolded, with nobody chosen and no gain column', async () => {
+  it('opens on suggested drops, the roster folded, with nobody chosen and no gain column', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(page.rosterOpen()).toBe(true);
+    expect(page.rosterOpen()).toBe(false);
+    expect(ngMocks.findAll(fixture, '.roster-table')).toHaveLength(0);
     // Everyone with a seat starts every night, so the cheapest is the lowest scorer who holds a
     // spot: the C on injured reserve scores lowest but holds none.
     expect(page.dropCandidates()[0]?.player.playerId).toBe('203');
@@ -516,25 +517,41 @@ describe('PlayerScoutComponent', () => {
       'false',
       'false',
     ]);
-    expect(ngMocks.formatText(ngMocks.find(fixture, '.pill--other'))).toBe('Someone else');
     expect(ngMocks.findAll(fixture, '.room-caption')).toHaveLength(0);
     const toggle = ngMocks.find(fixture, '.roster-toggle');
-    expect(ngMocks.formatText(toggle)).toBe('Your players (12)');
-    expect(toggle.attributes['aria-expanded']).toBe('true');
+    expect(ngMocks.formatText(toggle)).toBe('Show all (12)');
+    expect(toggle.attributes['aria-expanded']).toBe('false');
+    ngMocks.click(toggle);
+    fixture.detectChanges();
+    expect(page.rosterOpen()).toBe(true);
     ngMocks.click(toggle);
     fixture.detectChanges();
     expect(page.rosterOpen()).toBe(false);
   });
 
-  it('unfolds the roster to the few a drop would be, none chosen, and the rest on request', async () => {
+  it('unfolds the whole roster, none chosen, and narrows it to the few a drop would be on request', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
+    ngMocks.click(ngMocks.find(fixture, '.roster-toggle'));
+    fixture.detectChanges();
     expect(ngMocks.find(fixture, '.roster-toggle').attributes['aria-expanded']).toBe('true');
     const order = page.roster().map((entry) => entry.player.playerId);
     expect(order[0]).toBe('203');
     expect(order.at(-1)).toBe('211');
     let rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
+    // Eleven who hold a spot, the line for injured reserve, and the one on it, with no radio.
+    expect(rows).toHaveLength(13);
+    expect(ngMocks.formatText(rows[11])).toBe('On IR, no spot to free');
+    expect(ngMocks.formatText(rows[12])).toContain('Mine 211');
+    expect(ngMocks.findAll(rows[12], 'input[type=radio]')).toHaveLength(0);
+
+    const fewer = ngMocks.find(fixture, '.roster-more');
+    expect(ngMocks.formatText(fewer)).toBe('Show fewer');
+    ngMocks.click(fewer);
+    fixture.detectChanges();
+
+    rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
     expect(rows).toHaveLength(4);
     expect(ngMocks.formatText(rows[0])).toContain('10 / 10');
     expect(rows[0].nativeElement.classList).not.toContain('roster-row--drop');
@@ -544,19 +561,7 @@ describe('PlayerScoutComponent', () => {
       .findAll(fixture, '.roster-table thead th')
       .map((th) => ngMocks.formatText(th));
     expect(headings).toEqual(['Player', 'Proj.', 'Starts', 'Lineup cost']);
-
-    const more = ngMocks.find(fixture, '.roster-more');
-    expect(ngMocks.formatText(more)).toBe('Show all 12');
-    ngMocks.click(more);
-    fixture.detectChanges();
-
-    rows = ngMocks.findAll(fixture, '.roster-table tbody tr');
-    // Eleven who hold a spot, the line for injured reserve, and the one on it, with no radio.
-    expect(rows).toHaveLength(13);
-    expect(ngMocks.formatText(rows[11])).toBe('On IR, no spot to free');
-    expect(ngMocks.formatText(rows[12])).toContain('Mine 211');
-    expect(ngMocks.findAll(rows[12], 'input[type=radio]')).toHaveLength(0);
-    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-more'))).toBe('Show fewer');
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-more'))).toBe('Show all 12');
   });
 
   it('re-prices the list against the drop picked, from a chip or from the roster, and forgets him with the league', async () => {
@@ -572,8 +577,8 @@ describe('PlayerScoutComponent', () => {
     const table = ngMocks.find(fixture, ScoutTableComponent);
     expect(ngMocks.input(table, 'dropName')).toBe('202');
 
-    // Someone else unfolds the whole roster, and any row of it can be the drop.
-    ngMocks.click(ngMocks.find(fixture, '.pill--other'));
+    // Show all unfolds the whole roster, and any row of it can be the drop.
+    ngMocks.click(ngMocks.find(fixture, '.roster-toggle'));
     fixture.detectChanges();
     expect(page.rosterOpen()).toBe(true);
     expect(page.rosterAll()).toBe(true);

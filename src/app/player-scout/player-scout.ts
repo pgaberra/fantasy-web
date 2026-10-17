@@ -704,17 +704,19 @@ export class PlayerScoutComponent {
     return this.formatScore(entry.value?.marginal ?? null);
   }
 
-  /**
-   * Whether the roster is unfolded under the room line: open on a full roster, where it lists the
-   * suggested drops, folded otherwise; set afresh with the league.
-   */
-  readonly rosterOpen = linkedSignal<boolean, boolean>({
-    source: () => this.fullRoster(),
-    computation: (full) => full,
+  /** Whether the roster is unfolded under the room line: folded until asked for, and with each league. */
+  readonly rosterOpen = linkedSignal<unknown, boolean>({
+    source: () => this.league(),
+    computation: () => false,
   });
 
+  /** "Show all" on the room line: the whole roster unfolded, any row of it to be picked. */
   toggleRoster(): void {
-    this.rosterOpen.update((open) => !open);
+    const open = !this.rosterOpen();
+    this.rosterOpen.set(open);
+    if (open) {
+      this.rosterAll.set(true);
+    }
   }
 
   /** Whether the fold-out lists the whole roster, or only the players a drop would usually be. */
@@ -725,12 +727,6 @@ export class PlayerScoutComponent {
 
   toggleRosterAll(): void {
     this.rosterAll.update((all) => !all);
-  }
-
-  /** "Other..." on the room line: the whole roster unfolded, any row of it to be picked. */
-  openRoster(): void {
-    this.rosterOpen.set(true);
-    this.rosterAll.set(true);
   }
 
   /**

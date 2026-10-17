@@ -473,10 +473,6 @@ select:focus-visible,
   color: var(--color-primary-contrast);
 }
 
-.pill--other {
-  padding: 3px var(--space-3);
-}
-
 .roster-toggle {
   align-items: center;
   background: none;
