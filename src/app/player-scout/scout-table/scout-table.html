@@ -114,11 +114,16 @@
               class="num gain-col stat-col--start"
               [attr.aria-sort]="ariaSort('gain')"
             >
-              <button type="button" class="sort" (click)="sortBy.emit('gain')">
+              <button
+                type="button"
+                class="sort"
+                [appTooltip]="gainTip()"
+                (click)="sortBy.emit('gain')"
+              >
                 @if (sort().key === 'gain') {
                   <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
                 }
-                Gain if you drop {{ dropName() }}
+                vs {{ dropName() }}
               </button>
             </th>
           }
@@ -215,7 +220,12 @@
                 @if (gaining() && pickable(entry.row)) {
                   <span class="player-gain" [class.player-gain--top]="isTopGain(entry.row)">
                     <span class="player-gain-label">Gain</span>
-                    {{ gain(entry.row) ?? '?' }}
+                    &ngsp;
+                    @if (gain(entry.row); as gain) {
+                      <span class="gain gain--{{ gain.dir }}">{{ gain.text }}</span>
+                    } @else {
+                      <span class="gain-unknown">?</span>
+                    }
                   </span>
                 }
               </span>
@@ -254,7 +264,7 @@
               <td class="num gain-col stat-col--start" [class.gain-col--top]="isTopGain(entry.row)">
                 @if (pickable(entry.row)) {
                   @if (gain(entry.row); as gain) {
-                    <span class="gain">{{ gain }}</span>
+                    <span class="gain gain--{{ gain.dir }}">{{ gain.text }}</span>
                   } @else {
                     <span class="gain-unknown">?</span>
                   }

@@ -375,17 +375,25 @@ export class ScoutTableComponent {
     return row.scout.owner === null;
   }
 
-  /** "+12.4" for an upgrade, "-3.1" for none, "0.0" for neither; null where the page could not price him. */
-  gain(row: ScoutRow): string | null {
+  /**
+   * "+12.4" for an upgrade, "-3.1" for none, "0.0" for neither, each with the way it points so the
+   * figure wears green or red like the changes beside it; null where the page could not price him.
+   */
+  gain(row: ScoutRow): Delta | null {
     const gain = this.gains()?.get(row.player.playerId) ?? null;
     if (gain === null) {
       return null;
     }
     const text = gain.toFixed(this.scoreDigits());
     if (Number(text) === 0) {
-      return (0).toFixed(this.scoreDigits());
+      return { text: (0).toFixed(this.scoreDigits()), dir: 'flat' };
     }
-    return gain > 0 ? `+${text}` : text;
+    return { text: gain > 0 ? `+${text}` : text, dir: gain > 0 ? 'up' : 'down' };
+  }
+
+  /** What the heading's short "vs Silovs" stands for, in the tooltip. */
+  gainTip(): string {
+    return `What your lineup gains over the rest of the season by picking him up and dropping ${this.dropName()}`;
   }
 
   isTopGain(row: ScoutRow): boolean {

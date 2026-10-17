@@ -696,7 +696,7 @@ export class PlayerScoutComponent {
       this.room().toReserve.length === 0,
   );
 
-  /** The chosen drop's surname, for the gain column's heading: "Gain if you drop Hughes". */
+  /** The chosen drop's surname, for the gain column's heading: "vs Hughes". */
   readonly dropSurname = computed(() => surname(this.drop()?.player.name ?? ''));
 
   /** "143.1": what his going costs the lineup, as his chip and his row say it. */

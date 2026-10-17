@@ -197,19 +197,30 @@
 
 /* The gain: what the lineup gains over the rest of the season by the pickup against the drop the
    page has chosen, one figure a row, set right like the figures it sits beside. The heading names
-   the drop. The three biggest gains among everyone priced wear the gold wash, since gold marks the
-   figure that decides; the sign carries the direction, so no green. */
+   the drop, "vs Silovs", and is inked like its neighbours: gold on a heading would claim the
+   column decides, when gold marks a figure. The figure is green up, red down and quiet at nothing,
+   as every other change on the page is, and the three biggest gains among everyone priced wear
+   the gold wash behind it, since gold marks the figure that decides. */
 .scout-table .gain-col {
   min-width: 6rem;
-}
-
-.scout-table thead th.gain-col {
-  color: var(--color-gold-strong);
 }
 
 .gain {
   font-variant-numeric: tabular-nums;
   font-weight: var(--weight-semibold);
+}
+
+.gain--up {
+  color: var(--color-success);
+}
+
+.gain--down {
+  color: var(--color-danger);
+}
+
+.gain--flat {
+  color: var(--color-text-subtle);
+  font-weight: normal;
 }
 
 .scout-table td.gain-col--top {
@@ -218,11 +229,6 @@
 
 .scout-table tbody tr:hover > td.gain-col--top {
   background: var(--color-warning-border);
-}
-
-.gain-col--top .gain,
-.player-gain--top {
-  color: var(--color-gold-strong);
 }
 
 /* A pickup the page could not price: his club has no night in the schedule. */

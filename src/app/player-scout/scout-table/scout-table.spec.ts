@@ -404,7 +404,7 @@ describe('ScoutTableComponent', () => {
     ).not.toContain('Gain');
   });
 
-  it('heads a sortable gain column by the drop, with the three biggest gains in gold and a pickup it could not price as a question', () => {
+  it('heads a sortable gain column by the drop, each gain inked by its sign, the three biggest washed in gold and a pickup it could not price as a question', () => {
     const sortBy = vi.fn();
     const fixture = MockRender(ScoutTableComponent, {
       rows: [
@@ -431,7 +431,7 @@ describe('ScoutTableComponent', () => {
     });
 
     const heading = ngMocks.find(fixture, 'th.gain-col');
-    expect(ngMocks.formatText(heading)).toBe('Gain if you drop Hughes');
+    expect(ngMocks.formatText(heading)).toBe('vs Hughes');
     expect(ngMocks.findAll(fixture, 'td[tabindex]')).toHaveLength(0);
     const cells = ngMocks.findAll(fixture, 'td.gain-col');
     expect(cells.map((cell) => ngMocks.formatText(cell))).toEqual([
@@ -452,6 +452,17 @@ describe('ScoutTableComponent', () => {
       false,
       false,
     ]);
+    const tone = (cell: { nativeElement: HTMLElement }) =>
+      cell.nativeElement.querySelector('.gain')?.className.match(/gain--\w+/)?.[0] ?? null;
+    expect(cells.map(tone)).toEqual([
+      'gain--up',
+      'gain--down',
+      null,
+      'gain--up',
+      'gain--up',
+      null,
+      'gain--flat',
+    ]);
     // The phone's line in the player cell says the same, for every pickup.
     const lines = ngMocks.findAll(fixture, '.player-gain');
     expect(lines.map((line) => ngMocks.formatText(line))).toEqual([
@@ -464,7 +475,7 @@ describe('ScoutTableComponent', () => {
     ]);
     expect(lines[3].nativeElement.classList).toContain('player-gain--top');
 
-    press(fixture, 'Gain if you drop Hughes');
+    press(fixture, 'vs Hughes');
     expect(sortBy.mock.calls).toEqual([['gain']]);
   });
 });
